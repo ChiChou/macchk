@@ -11,10 +11,25 @@ Comprehensive database of security-relevant macOS/iOS entitlements. Sources: XNU
 | `com.apple.security.hardened-process.hardened-heap` | STRENGTHENS | Hardened heap allocator with integrity checks |
 | `com.apple.security.hardened-process.dyld-ro` | STRENGTHENS | Read-only dyld memory (prevents runtime tampering) |
 | `com.apple.security.hardened-process.checked-allocations` | STRENGTHENS | Hardware memory tagging (MTE) for allocations |
-| `com.apple.security.hardened-process.platform-restrictions` | STRENGTHENS | Platform restrictions (limits IPC and port access) |
+| `com.apple.security.hardened-process.platform-restrictions` | STRENGTHENS | Deprecated integer variant of platform restrictions (default: 2) |
+| `com.apple.security.hardened-process.platform-restrictions-string` | STRENGTHENS | Platform restrictions — limits IPC and port access |
 | `com.apple.security.hardened-process.enhanced-security-version` | STRENGTHENS | Enhanced security version for progressive hardening |
 | `com.apple.security.hardened-process.enhanced-security-version-string` | STRENGTHENS | Deprecated string variant of above |
-| `com.apple.security.hardened-process.platform-restrictions-string` | STRENGTHENS | Deprecated string variant of platform-restrictions |
+
+### Platform Restrictions
+
+When `com.apple.security.hardened-process.platform-restrictions-string` (or its deprecated integer predecessor `platform-restrictions`, default: 2) is enabled, the kernel enforces runtime checks on Mach IPC and VM operations. Potentially insecure usage crashes the process with `EXC_GUARD` / `GUARD_TYPE_MACH_PORT`. The exception message identifies the violation:
+
+| Exception Message | Meaning |
+|---|---|
+| `REQUIRE_REPLY_PORT_SEMANTICS` | Mach message reply port can be diverted — use XPC instead of raw Mach IPC traps |
+| `KOBJECT_REPLY_PORT_SEMANTICS` | Kernel message reply port can be intercepted — use libSystem or kernel MIG interfaces |
+| `OOL_PORT_ARRAY` | Insecure descriptor layout (OOL port arrays) in MIG/Mach IPC — use XPC or avoid port arrays |
+| `THREAD_SET_STATE` | Insecure `thread_set_state` call — attacker could hijack control flow |
+| `SET_EXCEPTION_BEHAVIOR` | Exception port uses insecure behavior (e.g. `EXCEPTION_DEFAULT`) that leaks task/thread ports — use `EXCEPTION_IDENTITY_PROTECTED` or `EXCEPTION_STATE` |
+| `ILLEGAL_MOVE` | Send right to task/thread control port moved to another process — removes this escalation path |
+
+These restrictions push adoption of higher-level IPC (XPC) over raw Mach traps, which are difficult to use securely.
 
 ### Hardware Memory Tagging (Checked Allocations)
 
