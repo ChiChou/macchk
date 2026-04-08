@@ -97,8 +97,8 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
     EntitlementInfo {
         key: "com.apple.security.hardened-process.checked-allocations.soft-mode",
         impact: Impact::Strengthens,
-        // Tags memory but logs mismatches instead of trapping.
-        short_desc: "MTE in diagnostic mode — logs tag mismatches instead of trapping",
+        // Produces simulated crash reports on tag mismatches instead of terminating.
+        short_desc: "MTE soft mode — simulated crashes on tag mismatches instead of terminating",
         category: "enhanced_security",
     },
     EntitlementInfo {

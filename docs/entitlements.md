@@ -8,7 +8,7 @@ Comprehensive database of security-relevant macOS/iOS entitlements. Sources: XNU
 |-------------|--------|-------------|
 | `com.apple.security.hardened-process` | STRENGTHENS | Enables enhanced security / hardened process mode |
 | `com.apple.developer.hardened-process` | STRENGTHENS | Developer variant of hardened process |
-| `com.apple.security.hardened-process.hardened-heap` | STRENGTHENS | Hardened heap allocator with integrity checks |
+| `com.apple.security.hardened-process.hardened-heap` | STRENGTHENS | Type-aware memory allocations (requires `CLANG_ENABLE_C_TYPED_ALLOCATOR_SUPPORT` and `CLANG_ENABLE_CPLUSPLUS_TYPED_ALLOCATOR_SUPPORT` build settings) |
 | `com.apple.security.hardened-process.dyld-ro` | STRENGTHENS | Read-only dyld memory (prevents runtime tampering) |
 | `com.apple.security.hardened-process.checked-allocations` | STRENGTHENS | Hardware memory tagging (MTE) for allocations |
 | `com.apple.security.hardened-process.platform-restrictions` | STRENGTHENS | Deprecated integer variant of platform restrictions (default: 2) |
@@ -38,7 +38,7 @@ These entitlements control ARM MTE (Memory Tagging Extension) for heap allocatio
 | Entitlement | Impact | Description |
 |-------------|--------|-------------|
 | `com.apple.security.hardened-process.checked-allocations` | STRENGTHENS | Enables tagging of pointers and memory allocations with hardware MTE |
-| `com.apple.security.hardened-process.checked-allocations.soft-mode` | STRENGTHENS | Diagnostic mode — tags memory but logs mismatches instead of trapping |
+| `com.apple.security.hardened-process.checked-allocations.soft-mode` | STRENGTHENS | Soft mode — produces simulated crash reports on tag mismatches instead of terminating |
 | `com.apple.security.hardened-process.checked-allocations.enable-pure-data` | STRENGTHENS | Also tags memory regions that contain only data (no pointers) |
 | `com.apple.security.hardened-process.checked-allocations.no-tagged-receive` | STRENGTHENS | Prevents receiving tagged memory from other processes via IPC |
 

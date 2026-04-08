@@ -31,7 +31,7 @@ Requires Standard or Full detection level. arm64 uses raw binary pattern matchin
 
 ## libc++ Hardening
 
-- **Build setting:** `CLANG_CXX_STANDARD_LIBRARY_HARDENING` (Xcode), with defaults influenced by `ENABLE_CPLUSPLUS_BOUNDS_SAFE_BUFFERS` and `ENABLE_ENHANCED_SECURITY`
+- **Build setting:** `CLANG_CXX_STANDARD_LIBRARY_HARDENING` (Xcode), with defaults influenced by `ENABLE_CPLUSPLUS_BOUNDS_SAFE_BUFFERS` (also enables compile-time unsafe buffer usage warnings) and `ENABLE_ENHANCED_SECURITY`
 - **Compiler flag:** `-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST`
 - **arm64 pattern:** `cmp` + `b.{hs,hi,eq}` → `brk #0x1` (`0xD4200020`)
 - **x86_64 pattern:** `cmp/test` + `jae/ja/je` → `ud2`
