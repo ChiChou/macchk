@@ -221,18 +221,29 @@ impl Check for TypedAllocatorsCheck {
         Polarity::Positive
     }
     fn run(&self, ctx: &AnalysisContext) -> CheckResult {
+        // C typed allocators (-ftyped-memory-operations)
+        let c_symbols: &[&str] = &[
+            "_malloc_type_malloc",
+            "_malloc_type_calloc",
+            "_malloc_type_realloc",
+            "_malloc_type_valloc",
+            "_malloc_type_aligned_alloc",
+        ];
+        // C++ typed allocators (-ftyped-cxx-new-delete / -ftyped-cxx-delete)
+        // Mangled typed operator new/delete with __type_descriptor_t parameter
+        let cxx_symbols: &[&str] = &[
+            "__ZnwmSt19__type_descriptor_t",
+            "__ZnamSt19__type_descriptor_t",
+            "__ZdlPvSt19__type_descriptor_t",
+            "__ZdaPvSt19__type_descriptor_t",
+        ];
+        let all_symbols: Vec<&str> = c_symbols.iter().chain(cxx_symbols.iter()).copied().collect();
         symbol_check(
             ctx,
             self.id(),
             self.name(),
             self.polarity(),
-            &[
-                "_malloc_type_malloc",
-                "_malloc_type_calloc",
-                "_malloc_type_realloc",
-                "_malloc_type_valloc",
-                "_malloc_type_aligned_alloc",
-            ],
+            &all_symbols,
             "import_symbol",
         )
     }

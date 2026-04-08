@@ -17,8 +17,8 @@ Extracted by iterating `macho.segments` and their sections. Quick-level.
 ## __PAGEZERO
 
 - **Segment:** `__PAGEZERO` (vmaddr=0, vmsize typically 0x100000000 on 64-bit)
-- **Impact:** Positive — maps low memory as non-accessible, catching NULL dereferences
-- **Notes:** Missing or zero-sized `__PAGEZERO` makes NULL dereference bugs exploitable. Dylibs and kexts legitimately lack this segment.
+- **Impact:** Positive — maps pagezero_size (linker flag) memory as non-accessible, catching NULL dereferences
+- **Notes:** Ensures that NULL pointer dereferences (and small offsets) trigger a crash rather than potentially dereferencing attacker-controlled data at address 0. On modern systems, hardware features like SMEP/SMAP (Intel) and PAN/PXN (Apple Silicon) provide additional kernel-level protection against NULL dereference exploits. dylibs and kexts do not have a `__PAGEZERO` as they are loaded into an existing address space already protected by the host process or kernel.
 
 ## Segment Permissions
 

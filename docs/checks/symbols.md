@@ -25,10 +25,11 @@ Extracted from imported symbols (nlist entries with N_EXT && N_UNDF). Quick-leve
 
 ## Typed Allocators
 
-- **Symbols:** `_malloc_type_malloc`, `_malloc_type_calloc`, `_malloc_type_realloc`, `_malloc_type_valloc`, `_malloc_type_aligned_alloc`
+- **C symbols:** `_malloc_type_malloc`, `_malloc_type_calloc`, `_malloc_type_realloc`, `_malloc_type_valloc`, `_malloc_type_aligned_alloc`
+- **C++ symbols:** `_ZnwmSt19__type_descriptor_t` (typed `operator new`), `_ZnamSt19__type_descriptor_t` (typed `operator new[]`), `_ZdlPvSt19__type_descriptor_t` (typed `operator delete`), `_ZdaPvSt19__type_descriptor_t` (typed `operator delete[]`)
 - **Impact:** Positive — type-isolated allocation prevents type confusion exploitation
-- **Build settings:** `CLANG_ENABLE_C_TYPED_ALLOCATOR_SUPPORT`, `CLANG_ENABLE_CPLUSPLUS_TYPED_ALLOCATOR_SUPPORT`
-- **Compiler flag:** `-ftyped-memory-operations-experimental` (enables `__has_feature(typed_memory_operations)`)
+- **Build settings:** `CLANG_ENABLE_C_TYPED_ALLOCATOR_SUPPORT`, `CLANG_ENABLE_CPLUSPLUS_TYPED_ALLOCATOR_SUPPORT` (both default to `ENABLE_ENHANCED_SECURITY`)
+- **Compiler flags:** C: `-ftyped-memory-operations`, C++: `-ftyped-cxx-new-delete` `-ftyped-cxx-delete`
 - **Notes:** Each allocation site gets a 64-bit type hash. Memory for different types is isolated.
 
 ## AddressSanitizer

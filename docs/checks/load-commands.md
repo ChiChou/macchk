@@ -24,7 +24,7 @@ Extracted by iterating `macho.load_commands`. Quick-level, no disassembly needed
 
 - **Impact:** Positive — blocks DYLD_* environment variable processing
 - **Detection:** Segment named `__RESTRICT` with section `__restrict`
-- **Notes:** When present, dyld ignores `DYLD_INSERT_LIBRARIES`, `DYLD_LIBRARY_PATH`, etc. This is a legacy mechanism; modern binaries use Hardened Runtime (CS_RUNTIME) or Library Validation (CS_REQUIRE_LV) instead.
+- **Notes:** When present, dyld ignores `DYLD_INSERT_LIBRARIES`, `DYLD_LIBRARY_PATH`, etc. This is a legacy mechanism; modern binaries use Hardened Runtime (`CS_RUNTIME`) or Library Validation (`CS_REQUIRE_LV`) instead.
 
 ## RPATH (LC_RPATH)
 
