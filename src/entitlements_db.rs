@@ -34,11 +34,7 @@ pub fn classify(key: &str) -> Option<(Impact, &'static str)> {
 
 pub static ENTITLEMENTS: &[EntitlementInfo] = &[
 
-    // ═══════════════════════════════════════════════════════════════════
-    // STRENGTHENS — enables additional protections on this process
-    // ═══════════════════════════════════════════════════════════════════
-
-    // ── Enhanced Security ──────────────────────────────────────────────
+    // enhanced security
 
     EntitlementInfo {
         key: "com.apple.security.hardened-process",
@@ -86,7 +82,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "enhanced_security",
     },
 
-    // ── Checked Allocations (MTE / Hardware Memory Tagging) ────────────
+    // checked allocations (MTE)
 
     EntitlementInfo {
         key: "com.apple.security.hardened-process.checked-allocations",
@@ -114,7 +110,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "enhanced_security",
     },
 
-    // ── Containment ─────────────────────────────────────────────────────
+    // containment
 
     EntitlementInfo {
         key: "com.apple.security.hardened-process.containment.ipc",
@@ -125,7 +121,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "enhanced_security",
     },
 
-    // ── Deprecated enhanced security variants ──────────────────────────
+    // deprecated hardened-process variants
 
     EntitlementInfo {
         key: "com.apple.security.hardened-process.enhanced-security-version-string",
@@ -140,7 +136,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "enhanced_security",
     },
 
-    // ── Sandbox ────────────────────────────────────────────────────────
+    // sandbox
 
     EntitlementInfo {
         key: "com.apple.security.app-sandbox",
@@ -149,7 +145,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "sandbox",
     },
 
-    // ── PAC ────────────────────────────────────────────────────────────
+    // pac
 
     EntitlementInfo {
         key: "com.apple.private.pac.exception",
@@ -168,7 +164,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "pac",
     },
 
-    // ── Exception Handling ─────────────────────────────────────────────
+    // exception handling
 
     EntitlementInfo {
         key: "com.apple.security.fatal-exceptions",
@@ -185,11 +181,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "exceptions",
     },
 
-    // ═══════════════════════════════════════════════════════════════════
-    // WEAKENS — disables or bypasses a security protection on this process
-    // ═══════════════════════════════════════════════════════════════════
-
-    // ── Code Signing Exceptions ────────────────────────────────────────
+    // code signing exceptions
 
     EntitlementInfo {
         key: "com.apple.security.cs.disable-library-validation",
@@ -261,7 +253,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "cs_exception",
     },
 
-    // ── Debugging (weakens THIS process) ───────────────────────────────
+    // debugging
 
     EntitlementInfo {
         key: "com.apple.security.get-task-allow",
@@ -278,7 +270,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "debugging",
     },
 
-    // ── Library Validation ─────────────────────────────────────────────
+    // library validation
 
     EntitlementInfo {
         key: "com.apple.private.security.clear-library-validation",
@@ -321,7 +313,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "sandbox",
     },
 
-    // ── Sandbox Temporary Exceptions ──────────────────────────────────
+    // sandbox temporary exceptions
 
     EntitlementInfo {
         key: "com.apple.security.temporary-exception.apple-events",
@@ -390,9 +382,6 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "sandbox_exception",
     },
 
-    // ═══════════════════════════════════════════════════════════════════
-    // INFO — grants capabilities; doesn't change this process's security
-    // ═══════════════════════════════════════════════════════════════════
 
     EntitlementInfo {
         key: "com.apple.security.cs.debugger",
@@ -528,7 +517,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "filesystem",
     },
 
-    // ── Code Signing (allow-in-chroot) ────────────────────────────────
+    // code signing (allow-in-chroot)
 
     EntitlementInfo {
         key: "com.apple.security.cs.allow-in-chroot",
@@ -539,7 +528,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "cs_exception",
     },
 
-    // ── OOP-JIT ───────────────────────────────────────────────────────
+    // oop-jit
 
     EntitlementInfo {
         key: "com.apple.private.oop-jit.runner",
@@ -560,7 +549,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "cs_exception",
     },
 
-    // ── Core Dump Policy ──────────────────────────────────────────────
+    // core dump policy
 
     EntitlementInfo {
         key: "com.apple.security.allow-coredump",
@@ -571,7 +560,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "diagnostics",
     },
 
-    // ── Developer JIT variant ─────────────────────────────────────────
+    // developer jit variant
 
     EntitlementInfo {
         key: "com.apple.developer.cs.allow-jit",
@@ -582,7 +571,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "cs_exception",
     },
 
-    // ── AMFI Exception Ports ──────────────────────────────────────────
+    // amfi exception ports
 
     EntitlementInfo {
         key: "com.apple.private.amfi.can-set-exception-ports",
@@ -593,7 +582,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "debugging",
     },
 
-    // ── AMFI Version Restriction ──────────────────────────────────────
+    // amfi version restriction
 
     EntitlementInfo {
         key: "com.apple.private.amfi.version-restriction",
@@ -605,7 +594,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "amfi",
     },
 
-    // ── AMFI Management ───────────────────────────────────────────────
+    // amfi management
 
     EntitlementInfo {
         key: "com.apple.private.amfi.can-set-denylist",
@@ -657,7 +646,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "amfi",
     },
 
-    // ── System Task Ports (full set) ──────────────────────────────────
+    // system task ports
 
     EntitlementInfo {
         key: "com.apple.system-task-ports",
@@ -745,7 +734,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "debugging",
     },
 
-    // ── Debugger Variants ─────────────────────────────────────────────
+    // debugger variants
 
     EntitlementInfo {
         key: "com.apple.private.cs.debugger.safe",
@@ -771,7 +760,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "debugging",
     },
 
-    // ── Code Signing Operations ───────────────────────────────────────
+    // code signing operations
 
     EntitlementInfo {
         key: "com.apple.private.allow-cs-signing",
@@ -809,7 +798,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "code_signing",
     },
 
-    // ── SIP / Rootless ────────────────────────────────────────────────
+    // sip / rootless
 
     EntitlementInfo {
         key: "com.apple.private.allow-bless",
@@ -903,7 +892,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "rootless",
     },
 
-    // ── Security Container / Storage ──────────────────────────────────
+    // security container / storage
 
     EntitlementInfo {
         key: "com.apple.private.security.container-manager",
@@ -960,7 +949,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "filesystem",
     },
 
-    // ── TCC (Transparency, Consent, and Control) ──────────────────────
+    // tcc
 
     EntitlementInfo {
         key: "com.apple.private.tcc.allow",
@@ -992,7 +981,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "tcc",
     },
 
-    // ── Web Browser Engine ────────────────────────────────────────────
+    // web browser engine
 
     EntitlementInfo {
         key: "com.apple.developer.web-browser-engine.webcontent",
@@ -1003,7 +992,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "browser",
     },
 
-    // ── Developer: System Extensions & Security ───────────────────────
+    // system extensions & security
 
     EntitlementInfo {
         key: "com.apple.developer.system-extension",
@@ -1030,7 +1019,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "developer",
     },
 
-    // ── App Protection / Groups ───────────────────────────────────────
+    // app protection / groups
 
     EntitlementInfo {
         key: "com.apple.security.application-groups",
@@ -1046,7 +1035,7 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "enhanced_security",
     },
 
-    // ── Miscellaneous ─────────────────────────────────────────────────
+    // misc
 
     EntitlementInfo {
         key: "com.apple.private.host-exception-port-override",
