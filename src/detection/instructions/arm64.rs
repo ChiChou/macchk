@@ -8,9 +8,7 @@ use crate::detection::instructions::{get_symbol_name, get_text_section};
 use crate::detection::AnalysisContext;
 use crate::types::*;
 
-// ---------------------------------------------------------------------------
 // Instruction encoding helpers
-// ---------------------------------------------------------------------------
 
 /// Extract the 16-bit immediate from a BRK instruction (bits [20:5]).
 #[inline(always)]
@@ -37,9 +35,7 @@ fn bcond_offset(word: u32) -> i64 {
     (signed as i64) * 4
 }
 
-// ---------------------------------------------------------------------------
 // Instruction matchers: (mask, value) pairs
-// ---------------------------------------------------------------------------
 
 // BRK #imm16: 0xD4200000 | (imm16 << 5)
 const BRK_MASK: u32 = 0xFFE0001F;
@@ -107,7 +103,7 @@ fn is_cmp_or_ccmp(w: u32) -> bool {
     is_cmp(w) || is_ccmp(w)
 }
 
-// --- PAC instruction encodings ---
+// PAC instruction encodings
 const PACIBSP: u32 = 0xD503237F;
 const PACIASP: u32 = 0xD503233F;
 const RETAB: u32 = 0xD65F0FFF;
@@ -160,7 +156,7 @@ fn pac_name(w: u32) -> &'static str {
     }
 }
 
-// --- Zero-init patterns ---
+// Zero-init patterns
 // movi Vd.2D, #0: 0x6F00E400 mask 0xFFFFFFE0
 const MOVI_2D_ZERO_MASK: u32 = 0xFFFFFFE0;
 const MOVI_2D_ZERO_VAL: u32 = 0x6F00E400;
@@ -300,7 +296,7 @@ fn is_terminator(w: u32) -> bool {
         || w & BRK_MASK == BRK_VALUE // BRK
 }
 
-// --- MTE instruction encodings (from previous implementation) ---
+// MTE instruction encodings
 
 fn is_mte_instruction(word: u32) -> Option<&'static str> {
     if word & 0xFFE0FC00 == 0x9AC01000 {
@@ -379,9 +375,7 @@ fn is_mte_instruction(word: u32) -> Option<&'static str> {
     None
 }
 
-// ---------------------------------------------------------------------------
 // Scan helpers — operate on raw u32 word arrays
-// ---------------------------------------------------------------------------
 
 /// Convert text section bytes to aligned u32 words.
 fn to_words(data: &[u8]) -> Vec<u32> {
@@ -403,9 +397,7 @@ fn find_brk_sites(words: &[u32], brk_imm_val: u16) -> Vec<usize> {
         .collect()
 }
 
-// ---------------------------------------------------------------------------
 // Detection functions
-// ---------------------------------------------------------------------------
 
 pub fn detect_pac_instructions(
     ctx: &AnalysisContext,
@@ -432,15 +424,16 @@ pub fn detect_pac_instructions(
         stats.functions_scanned += 1;
 
         let mut found = false;
-        for i in w_start..w_end {
-            if is_pac_instruction(words[i]) {
+        for (i, &w) in words[w_start..w_end].iter().enumerate() {
+            if is_pac_instruction(w) {
                 found = true;
                 if evidence.is_empty() || is_full {
-                    let addr = text_base + (i as u64) * 4;
+                    let abs_i = w_start + i;
+                    let addr = text_base + (abs_i as u64) * 4;
                     let fname = get_symbol_name(ctx.macho, fstart);
                     evidence.push(Evidence {
                         strategy: "binary_pattern".into(),
-                        description: format!("{} in {}", pac_name(words[i]), fname),
+                        description: format!("{} in {}", pac_name(w), fname),
                         confidence: Confidence::Definitive,
                         address: Some(addr),
                         function_name: Some(fname),
@@ -496,9 +489,10 @@ pub fn detect_zeroinit(
         // Find prologue end (first 8 instructions)
         let prologue_end = {
             let mut pe = w_start;
-            for i in w_start..std::cmp::min(w_start + 8, w_end) {
-                if is_prologue_insn(words[i]) {
-                    pe = i + 1;
+            let end = std::cmp::min(w_start + 8, w_end);
+            for (i, &w) in words[w_start..end].iter().enumerate() {
+                if is_prologue_insn(w) {
+                    pe = w_start + i + 1;
                 }
             }
             pe
@@ -507,18 +501,19 @@ pub fn detect_zeroinit(
         let mut found = false;
         let scan_end = std::cmp::min(prologue_end + 12, w_end);
 
-        for i in w_start..scan_end {
-            let w = words[i];
+        for (idx, &w) in words[w_start..scan_end].iter().enumerate() {
+            let i = w_start + idx;
 
             // Pattern 1: movi Vd.2D, #0 followed by stp Qd,Qd,[sp/fp]
             if w & MOVI_2D_ZERO_MASK == MOVI_2D_ZERO_VAL {
                 // Check for subsequent stp qN to stack
-                for j in (i + 1)..std::cmp::min(i + 12, w_end) {
-                    if is_stp_qreg_to_stack(words[j]) {
+                let end = std::cmp::min(i + 12, w_end);
+                for &nw in &words[(i + 1)..end] {
+                    if is_stp_qreg_to_stack(nw) {
                         found = true;
                         break;
                     }
-                    if is_terminator(words[j]) {
+                    if is_terminator(nw) {
                         break;
                     }
                 }
@@ -779,17 +774,18 @@ pub fn detect_mte(
         stats.functions_scanned += 1;
 
         let mut found = false;
-        for i in w_start..w_end {
-            if let Some(mte_name) = is_mte_instruction(words[i]) {
+        for (i, &w) in words[w_start..w_end].iter().enumerate() {
+            if let Some(mte_name) = is_mte_instruction(w) {
                 found = true;
                 if evidence.is_empty() || is_full {
-                    let addr = text_base + (i as u64) * 4;
+                    let abs_i = w_start + i;
+                    let addr = text_base + (abs_i as u64) * 4;
                     let fname = get_symbol_name(ctx.macho, fstart);
                     evidence.push(Evidence {
                         strategy: "binary_pattern".into(),
                         description: format!(
                             "{} ({:#010x}) in {} @ {:#x}",
-                            mte_name, words[i], fname, addr
+                            mte_name, w, fname, addr
                         ),
                         confidence: Confidence::Definitive,
                         address: Some(addr),
@@ -819,7 +815,7 @@ pub fn detect_mte(
     }
 }
 
-// --- Stack canary detection ---
+// Stack canary detection
 // BL imm26: 0x94000000 | (imm26 & 0x3FFFFFF)
 const BL_MASK: u32 = 0xFC000000;
 const BL_VALUE: u32 = 0x94000000;
@@ -897,10 +893,8 @@ pub fn detect_stack_canary(
         None => return empty_result(id, name, polarity),
     };
 
-    let chk_fail_addr =
-        find_stub_for_symbol(ctx.macho, ctx.raw_bytes, "___stack_chk_fail");
-    let chk_guard_got =
-        find_got_for_symbol(ctx.macho, ctx.raw_bytes, "___stack_chk_guard");
+    let chk_fail_addr = find_stub_for_symbol(ctx.macho, ctx.raw_bytes, "___stack_chk_fail");
+    let chk_guard_got = find_got_for_symbol(ctx.macho, ctx.raw_bytes, "___stack_chk_guard");
 
     // Need at least one of them to detect canaries
     if chk_fail_addr.is_none() && chk_guard_got.is_none() {
@@ -938,9 +932,7 @@ pub fn detect_stack_canary(
                     // Xn == ADRP's Rd and page + offset == guard GOT address
                     if i + 1 < w_end {
                         let next = words[i + 1];
-                        if next & LDR64_UOFF_MASK == LDR64_UOFF_VALUE
-                            && rn(next) == adrp_rd
-                        {
+                        if next & LDR64_UOFF_MASK == LDR64_UOFF_VALUE && rn(next) == adrp_rd {
                             let addr = page + ldr64_offset(next);
                             if addr == guard_addr {
                                 has_guard_load = true;
@@ -1012,7 +1004,7 @@ pub fn detect_stack_canary(
     }
 }
 
-// --- Jump table hardening ---
+// Jump table hardening
 // csel x16, x16, xzr, ls — index clamping for Spectre v1 mitigation
 const CSEL_X16_XZR_LS: u32 = 0x9A9F9210;
 // br x16 — indirect branch through hardened jump table
@@ -1050,33 +1042,26 @@ pub fn detect_jump_table_hardening(
         stats.functions_scanned += 1;
 
         let mut found = false;
-        for i in w_start..w_end {
-            if words[i] != CSEL_X16_XZR_LS {
+        for (idx, &w) in words[w_start..w_end].iter().enumerate() {
+            if w != CSEL_X16_XZR_LS {
                 continue;
             }
+            let i = w_start + idx;
             // Verify br x16 follows within 8 instructions
             let look_end = std::cmp::min(i + 8, w_end);
-            for j in (i + 1)..look_end {
-                if words[j] == BR_X16 {
-                    found = true;
-                    if evidence.is_empty() || is_full {
-                        let addr = text_base + (i as u64) * 4;
-                        let fname = get_symbol_name(ctx.macho, fstart);
-                        evidence.push(Evidence {
-                            strategy: "binary_pattern".into(),
-                            description: format!(
-                                "csel x16, x16, xzr, ls + br x16 in {}",
-                                fname
-                            ),
-                            confidence: Confidence::Definitive,
-                            address: Some(addr),
-                            function_name: Some(fname),
-                        });
-                    }
-                    break;
+            if words[(i + 1)..look_end].contains(&BR_X16) {
+                found = true;
+                if evidence.is_empty() || is_full {
+                    let addr = text_base + (i as u64) * 4;
+                    let fname = get_symbol_name(ctx.macho, fstart);
+                    evidence.push(Evidence {
+                        strategy: "binary_pattern".into(),
+                        description: format!("csel x16, x16, xzr, ls + br x16 in {}", fname),
+                        confidence: Confidence::Definitive,
+                        address: Some(addr),
+                        function_name: Some(fname),
+                    });
                 }
-            }
-            if found {
                 break;
             }
         }

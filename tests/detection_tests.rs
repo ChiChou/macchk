@@ -8,9 +8,7 @@ use std::path::Path;
 use macchk::binary::{analyze_binary, MappedBinary};
 use macchk::types::{CheckId, DetectionLevel};
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 fn fixture(name: &str) -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -18,7 +16,7 @@ fn fixture(name: &str) -> std::path::PathBuf {
         .join(name)
 }
 
-fn check_detected(path: &std::path::PathBuf, level: DetectionLevel, id: CheckId) -> bool {
+fn check_detected(path: &Path, level: DetectionLevel, id: CheckId) -> bool {
     let mapped = MappedBinary::open(path).expect("failed to open fixture");
     let result = analyze_binary(path, &mapped.mmap, level, None).expect("analysis failed");
     result
@@ -27,7 +25,7 @@ fn check_detected(path: &std::path::PathBuf, level: DetectionLevel, id: CheckId)
         .any(|s| s.checks.iter().any(|c| c.id == id && c.detected))
 }
 
-fn check_not_detected(path: &std::path::PathBuf, level: DetectionLevel, id: CheckId) -> bool {
+fn check_not_detected(path: &Path, level: DetectionLevel, id: CheckId) -> bool {
     let mapped = MappedBinary::open(path).expect("failed to open fixture");
     let result = analyze_binary(path, &mapped.mmap, level, None).expect("analysis failed");
     result
@@ -36,11 +34,7 @@ fn check_not_detected(path: &std::path::PathBuf, level: DetectionLevel, id: Chec
         .all(|s| s.checks.iter().any(|c| c.id == id && !c.detected))
 }
 
-fn get_check_evidence(
-    path: &std::path::PathBuf,
-    level: DetectionLevel,
-    id: CheckId,
-) -> Vec<String> {
+fn get_check_evidence(path: &Path, level: DetectionLevel, id: CheckId) -> Vec<String> {
     let mapped = MappedBinary::open(path).expect("failed to open fixture");
     let result = analyze_binary(path, &mapped.mmap, level, None).expect("analysis failed");
     result
@@ -55,9 +49,7 @@ fn get_check_evidence(
         .collect()
 }
 
-// ---------------------------------------------------------------------------
 // Exp 1: Stack zero-init
-// ---------------------------------------------------------------------------
 
 #[test]
 fn zeroinit_detected_when_enabled() {
@@ -77,9 +69,7 @@ fn zeroinit_not_detected_in_baseline() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Exp 2: Pointer authentication (PAC)
-// ---------------------------------------------------------------------------
 
 #[test]
 fn pac_detected_on_arm64e() {
@@ -99,9 +89,7 @@ fn pac_sections_on_arm64e() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Exp 3: C bounds safety
-// ---------------------------------------------------------------------------
 
 #[test]
 fn bounds_safety_detected_when_enabled() {
@@ -121,9 +109,7 @@ fn bounds_safety_not_detected_in_baseline() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Exp 4: libc++ hardening
-// ---------------------------------------------------------------------------
 
 #[test]
 fn libcpp_hardening_detected_when_enabled() {
@@ -143,9 +129,7 @@ fn libcpp_hardening_not_detected_in_baseline() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Exp 6: Typed allocators
-// ---------------------------------------------------------------------------
 
 #[test]
 fn typed_allocators_detected_when_enabled() {
@@ -165,9 +149,7 @@ fn typed_allocators_not_detected_in_baseline() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Exp 7: FORTIFY_SOURCE
-// ---------------------------------------------------------------------------
 
 #[test]
 fn fortify_detected_when_enabled() {
@@ -187,9 +169,7 @@ fn fortify_not_detected_without_flag() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Exp 8: Objective-C ARC
-// ---------------------------------------------------------------------------
 
 #[test]
 fn arc_detected_when_enabled() {
@@ -211,9 +191,7 @@ fn arc_detected_even_without_flag_due_to_framework() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Exp 9: Swift runtime
-// ---------------------------------------------------------------------------
 
 #[test]
 fn swift_runtime_detected() {
@@ -224,9 +202,7 @@ fn swift_runtime_detected() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Exp 10: __RESTRICT segment
-// ---------------------------------------------------------------------------
 
 #[test]
 fn restrict_detected_when_present() {
@@ -246,9 +222,7 @@ fn restrict_not_detected_without_segment() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Exp 11: Stack canary (symbol-level)
-// ---------------------------------------------------------------------------
 
 #[test]
 fn canary_symbol_detected_when_protected() {
@@ -268,9 +242,7 @@ fn canary_symbol_not_detected_without_protection() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Exp 11: Stack canary (instruction-level)
-// ---------------------------------------------------------------------------
 
 #[test]
 fn canary_insn_detected_arm64() {
@@ -320,9 +292,7 @@ fn canary_insn_evidence_shows_pattern() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Exp 14: Jump table hardening
-// ---------------------------------------------------------------------------
 
 #[test]
 fn jump_table_hardening_detected() {
@@ -342,9 +312,7 @@ fn jump_table_hardening_not_detected_in_baseline() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Exp 13: Sanitizers
-// ---------------------------------------------------------------------------
 
 #[test]
 fn asan_detected_when_enabled() {
@@ -382,9 +350,7 @@ fn ubsan_not_detected_without_sanitizer() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Exp 12: Hardened runtime + code signing
-// ---------------------------------------------------------------------------
 
 #[test]
 fn hardened_runtime_detected() {
@@ -422,9 +388,7 @@ fn cs_hash_type_detected_in_signed() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Common checks: PIE, code signature, __PAGEZERO
-// ---------------------------------------------------------------------------
 
 #[test]
 fn pie_detected_in_executables() {
@@ -453,16 +417,14 @@ fn pagezero_detected_in_executables() {
     );
 }
 
-// ---------------------------------------------------------------------------
 // Full mode coverage stats
-// ---------------------------------------------------------------------------
 
 #[test]
 fn full_mode_provides_coverage_stats() {
     let path = fixture("exp11_canary");
     let mapped = MappedBinary::open(&path).expect("failed to open fixture");
-    let result = analyze_binary(&path, &mapped.mmap, DetectionLevel::Full, None)
-        .expect("analysis failed");
+    let result =
+        analyze_binary(&path, &mapped.mmap, DetectionLevel::Full, None).expect("analysis failed");
     for slice in &result.slices {
         let canary = slice
             .checks
@@ -470,8 +432,14 @@ fn full_mode_provides_coverage_stats() {
             .find(|c| c.id == CheckId::StackCanaryInsn)
             .expect("StackCanaryInsn check missing");
         assert!(canary.detected, "expected canary detected in full mode");
-        let stats = canary.stats.as_ref().expect("expected coverage stats in full mode");
-        assert!(stats.functions_scanned > 0, "expected scanned functions > 0");
+        let stats = canary
+            .stats
+            .as_ref()
+            .expect("expected coverage stats in full mode");
+        assert!(
+            stats.functions_scanned > 0,
+            "expected scanned functions > 0"
+        );
         assert!(
             stats.functions_with_feature > 0,
             "expected functions with canary > 0"
@@ -479,9 +447,7 @@ fn full_mode_provides_coverage_stats() {
     }
 }
 
-// ---------------------------------------------------------------------------
 // x86_64 cross-architecture tests
-// ---------------------------------------------------------------------------
 
 #[test]
 fn zeroinit_detected_x86() {

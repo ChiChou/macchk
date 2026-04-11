@@ -121,12 +121,10 @@ pub fn compute_function_boundaries(macho: &MachO, raw_bytes: &[u8]) -> Vec<(u64,
 
     // From symbol table
     if let Some(ref syms) = macho.symbols {
-        for sym in syms.iter() {
-            if let Ok((_name, nlist)) = sym {
-                let addr = nlist.n_value;
-                if addr >= text_start && addr < text_end && nlist.n_type & 0x0e != 0 {
-                    starts.insert(addr);
-                }
+        for (_name, nlist) in syms.iter().flatten() {
+            let addr = nlist.n_value;
+            if addr >= text_start && addr < text_end && nlist.n_type & 0x0e != 0 {
+                starts.insert(addr);
             }
         }
     }
@@ -134,7 +132,7 @@ pub fn compute_function_boundaries(macho: &MachO, raw_bytes: &[u8]) -> Vec<(u64,
     // Also try exports
     if let Ok(exports) = macho.exports() {
         for export in &exports {
-            let addr = export.offset as u64;
+            let addr = export.offset;
             if addr >= text_start && addr < text_end {
                 starts.insert(addr);
             }
@@ -168,18 +166,16 @@ fn get_text_range(macho: &MachO) -> Option<(u64, u64)> {
 
 fn get_symbol_name(macho: &MachO, addr: u64) -> String {
     if let Some(ref syms) = macho.symbols {
-        for sym in syms.iter() {
-            if let Ok((name, nlist)) = sym {
-                if nlist.n_value == addr {
-                    return name.to_string();
-                }
+        for (name, nlist) in syms.iter().flatten() {
+            if nlist.n_value == addr {
+                return name.to_string();
             }
         }
     }
     format!("sub_{:x}", addr)
 }
 
-// ---- Check implementations that delegate to arch-specific modules ----
+// Check implementations that delegate to arch-specific modules
 
 pub struct PacInstructionsCheck;
 impl Check for PacInstructionsCheck {

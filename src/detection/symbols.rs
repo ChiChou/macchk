@@ -24,12 +24,10 @@ fn collect_symbol_names<'a>(ctx: &'a AnalysisContext) -> Vec<&'a str> {
     }
     // Also scan the full symbol table for undefined externals
     if let Some(ref syms) = ctx.macho.symbols {
-        for sym in syms.iter() {
-            if let Ok((name, nlist)) = sym {
-                // N_EXT (0x01) && N_UNDF (type == 0) means imported symbol
-                if nlist.n_type & 0x01 != 0 && nlist.n_type & 0x0e == 0 {
-                    names.push(name);
-                }
+        for (name, nlist) in syms.iter().flatten() {
+            // N_EXT (0x01) && N_UNDF (type == 0) means imported symbol
+            if nlist.n_type & 0x01 != 0 && nlist.n_type & 0x0e == 0 {
+                names.push(name);
             }
         }
     }
@@ -262,14 +260,13 @@ fn prefix_symbol_check(
     let mut found = Vec::new();
     for n in collect_symbol_names(ctx) {
         let stripped = n.strip_prefix('_').unwrap_or(n);
-        if stripped.starts_with(prefix) {
-            if !found.iter().any(|f: &String| f == n) {
+        if stripped.starts_with(prefix)
+            && !found.iter().any(|f: &String| f == n) {
                 found.push(n.to_string());
                 if found.len() >= max_evidence {
                     break;
                 }
             }
-        }
     }
     let detected = !found.is_empty();
     let evidence: Vec<Evidence> = found
@@ -394,11 +391,10 @@ impl Check for FortifySourceCheck {
         for n in collect_symbol_names(ctx) {
             // Strip all leading underscores for matching
             let base = n.trim_start_matches('_');
-            if fortify_suffixes.contains(&base) {
-                if !found.iter().any(|f: &String| f == n) {
+            if fortify_suffixes.contains(&base)
+                && !found.iter().any(|f: &String| f == n) {
                     found.push(n.to_string());
                 }
-            }
         }
         let detected = !found.is_empty();
         let evidence: Vec<Evidence> = found

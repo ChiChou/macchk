@@ -272,7 +272,7 @@ fn hash_type_name(ht: u8) -> &'static str {
 }
 
 fn is_strong_hash(ht: u8) -> bool {
-    matches!(ht, 2 | 3 | 4 | 5) // SHA-256 (truncated), SHA-256, SHA-384, SHA-512
+    matches!(ht, 2..=5) // SHA-256 (truncated), SHA-256, SHA-384, SHA-512
 }
 
 pub struct CodeSignHashTypeCheck;
@@ -313,11 +313,7 @@ impl Check for CodeSignHashTypeCheck {
                             "CodeDirectory hash: {} (type {}){}",
                             hash_type_name(ht),
                             ht,
-                            if ht == 1 {
-                                " [WEAK]"
-                            } else {
-                                ""
-                            }
+                            if ht == 1 { " [WEAK]" } else { "" }
                         ),
                         confidence: Confidence::Definitive,
                         address: None,
