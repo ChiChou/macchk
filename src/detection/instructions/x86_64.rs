@@ -14,7 +14,7 @@ fn make_engine() -> Result<Capstone, capstone::Error> {
         .build()
 }
 
-// --- Stack Zero-Init ---
+// Stack Zero-Init
 
 pub fn detect_zeroinit(
     ctx: &AnalysisContext,
@@ -72,9 +72,10 @@ pub fn detect_zeroinit(
 
             // Look for movaps/movups [rbp/rsp-off], xmmN stores
             let mut has_store = false;
-            for j in (i + 1)..std::cmp::min(i + 16, insn_vec.len()) {
-                let smn = insn_vec[j].mnemonic().unwrap_or("");
-                let sop = insn_vec[j].op_str().unwrap_or("");
+            let end = std::cmp::min(i + 16, insn_vec.len());
+            for ninsn in &insn_vec[(i + 1)..end] {
+                let smn = ninsn.mnemonic().unwrap_or("");
+                let sop = ninsn.op_str().unwrap_or("");
                 if ["movaps", "movups"].contains(&smn)
                     && (sop.contains("[rbp") || sop.contains("[rsp"))
                 {
@@ -120,7 +121,7 @@ pub fn detect_zeroinit(
     }
 }
 
-// --- libc++ Hardening ---
+// libc++ Hardening
 
 pub fn detect_libcpp_hardening(
     ctx: &AnalysisContext,
@@ -159,7 +160,7 @@ pub fn detect_libcpp_hardening(
         let ud2_addrs: HashSet<u64> = insn_vec
             .iter()
             .filter(|i| {
-                let insn_id = X86Insn::from(i.id().0 as u32);
+                let insn_id = X86Insn::from(i.id().0);
                 insn_id == X86Insn::X86_INS_UD2
             })
             .map(|i| i.address())
@@ -235,7 +236,7 @@ pub fn detect_libcpp_hardening(
     }
 }
 
-// --- C Bounds Safety ---
+// C Bounds Safety
 
 pub fn detect_bounds_safety(
     ctx: &AnalysisContext,
@@ -274,7 +275,7 @@ pub fn detect_bounds_safety(
         let ud1_addrs: HashSet<u64> = insn_vec
             .iter()
             .filter(|i| {
-                let insn_id = X86Insn::from(i.id().0 as u32);
+                let insn_id = X86Insn::from(i.id().0);
                 insn_id == X86Insn::X86_INS_UD1
             })
             .map(|i| i.address())
@@ -350,7 +351,7 @@ pub fn detect_bounds_safety(
     }
 }
 
-// --- Stack Canary ---
+// Stack Canary
 
 /// Detailed stack canary detection for x86_64.
 ///
@@ -405,7 +406,7 @@ pub fn detect_stack_canary(
         let mut has_chk_fail = false;
 
         for insn in insn_vec.iter() {
-            let insn_id = X86Insn::from(insn.id().0 as u32);
+            let insn_id = X86Insn::from(insn.id().0);
             let op = insn.op_str().unwrap_or("");
 
             // Detect MOV reg, [RIP+off] that loads ___stack_chk_guard GOT pointer
@@ -424,10 +425,8 @@ pub fn detect_stack_canary(
             }
 
             // Detect CMP after guard load
-            if has_guard_load {
-                if insn_id == X86Insn::X86_INS_CMP {
-                    has_guard_check = true;
-                }
+            if has_guard_load && insn_id == X86Insn::X86_INS_CMP {
+                has_guard_check = true;
             }
 
             // Detect CALL ___stack_chk_fail
@@ -496,12 +495,8 @@ fn extract_rip_relative_target(insn: &capstone::Insn) -> Option<u64> {
             let modrm = bytes[j + 1];
             if modrm & 0xC7 == 0x05 {
                 // mod=00, rm=101 (RIP-relative)
-                let disp = i32::from_le_bytes([
-                    bytes[j + 2],
-                    bytes[j + 3],
-                    bytes[j + 4],
-                    bytes[j + 5],
-                ]);
+                let disp =
+                    i32::from_le_bytes([bytes[j + 2], bytes[j + 3], bytes[j + 4], bytes[j + 5]]);
                 let next_ip = insn.address() + insn.len() as u64;
                 return Some(next_ip.wrapping_add(disp as i64 as u64));
             }
@@ -510,18 +505,17 @@ fn extract_rip_relative_target(insn: &capstone::Insn) -> Option<u64> {
     None
 }
 
-// --- Helpers ---
+// Helpers
 
 fn find_prologue_end_x86(insns: &[&capstone::Insn]) -> usize {
     let mut end = 0;
     for (i, insn) in insns.iter().enumerate().take(8) {
         let mn = insn.mnemonic().unwrap_or("");
         let op = insn.op_str().unwrap_or("");
-        if mn == "push" && op == "rbp" {
-            end = i + 1;
-        } else if mn == "mov" && op == "rbp, rsp" {
-            end = i + 1;
-        } else if mn == "sub" && op.starts_with("rsp,") {
+        let is_prologue = (mn == "push" && op == "rbp")
+            || (mn == "mov" && op == "rbp, rsp")
+            || (mn == "sub" && op.starts_with("rsp,"));
+        if is_prologue {
             end = i + 1;
         }
     }
