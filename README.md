@@ -41,19 +41,21 @@ $ macchk --brief /sbin/launchd /usr/libexec/amfid /usr/libexec/xpcproxy
 | Standard | `-l standard` | + instruction pattern scanning (default) |
 | Full | `-l full` | + per-function coverage statistics |
 
+> **Note**: Instruction-level checks (PAC instructions, stack canary patterns, etc.) are based on pattern matching and may produce false positives or negatives.
+
 ### What it checks
 
 **Mach-O Header**: PIE/ASLR, NX Heap, Executable Stack, App Extension Safe, CPU Subtype (arm64e)
 
 **Load Commands**: Code Signature, Encryption, Chained Fixups, `__RESTRICT` segment, RPATH, `LC_DYLD_ENVIRONMENT`
 
-**Symbol Table**: Stack Canary, ObjC ARC, Swift Runtime, Typed Allocators, FORTIFY_SOURCE
+**Symbol Table**: Stack Canary, Automatic Reference Counting (ARC), Swift Runtime, Typed Allocators, FORTIFY_SOURCE, AddressSanitizer, UBSan
 
 **Code Signing**: Hardened Runtime, CS_RESTRICT, Library Validation, CS_HARD+KILL, Signing Type, CodeDirectory Hash Type (flags SHA-1 as weak), Launch Constraints (DER-decoded), Entitlements (classified as strengthens/weakens/info)
 
 **Sections**: PAC markers, `__DATA_CONST`, `__PAGEZERO`, Segment Permissions
 
-**Instructions**: PAC instructions, Stack Zero-Init (`-ftrivial-auto-var-init=zero`), libc++ Hardening, C Bounds Safety (`-fbounds-safety`), MTE instructions, Stack Canary patterns (resolves `___stack_chk_guard` GOT + `___stack_chk_fail` stub)
+**Instructions**: PAC instructions, Stack Zero-Init (`-ftrivial-auto-var-init=zero`), libc++ Hardening, C Bounds Safety (`-fbounds-safety`), MTE instructions, Stack Canary patterns (resolves `___stack_chk_guard` GOT + `___stack_chk_fail` stub), Jump Table Hardening
 
 ## Output Formats
 
