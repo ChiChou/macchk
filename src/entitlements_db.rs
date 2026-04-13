@@ -294,9 +294,11 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
     },
     EntitlementInfo {
         key: "com.apple.private.cs.debugger",
-        impact: Impact::Weakens,
-        // Allows mapping pages with invalid code signatures in this process.
-        short_desc: "allows mapping pages with invalid code signatures",
+        impact: Impact::Info,
+        // Checked via IOCurrentTaskHasEntitlement in ppl_associate_debug_region.
+        // Allows the holder to map invalid code signature pages in a target
+        // process during debugging — affects the target, not the holder.
+        short_desc: "can map pages with invalid code signatures in debugged processes",
         category: "debugging",
     },
     EntitlementInfo {
@@ -445,6 +447,12 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
         category: "kernel",
     },
     EntitlementInfo {
+        key: "com.apple.private.task_policy",
+        impact: Impact::Info,
+        short_desc: "can modify task policy settings",
+        category: "kernel",
+    },
+    EntitlementInfo {
         key: "com.apple.private.spawn-subsystem-root",
         impact: Impact::Info,
         short_desc: "can spawn with subsystem root capabilities",
@@ -575,10 +583,11 @@ pub static ENTITLEMENTS: &[EntitlementInfo] = &[
 
     EntitlementInfo {
         key: "com.apple.private.amfi.can-set-exception-ports",
-        impact: Impact::Weakens,
+        impact: Impact::Info,
         // Checked in amfi_exc_action_label_populate. Allows a process to
         // set exception ports on tasks/threads, bypassing AMFI restrictions.
-        short_desc: "allows setting exception ports, bypassing AMFI exception port policy",
+        // Affects other processes, not the holder's own security posture.
+        short_desc: "can set exception ports on tasks/threads, bypassing AMFI restrictions",
         category: "debugging",
     },
 
