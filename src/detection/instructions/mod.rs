@@ -1,4 +1,5 @@
 pub mod arm64;
+#[cfg(feature = "x86_64")]
 pub mod x86_64;
 
 use std::collections::HashMap;
@@ -222,8 +223,11 @@ impl Check for StackZeroInitCheck {
     fn run(&self, ctx: &AnalysisContext) -> CheckResult {
         if ctx.is_arm64() {
             arm64::detect_zeroinit(ctx, self.id(), self.name(), self.polarity())
-        } else if ctx.is_x86_64() {
-            x86_64::detect_zeroinit(ctx, self.id(), self.name(), self.polarity())
+        } else if cfg!(feature = "x86_64") && ctx.is_x86_64() {
+            #[cfg(feature = "x86_64")]
+            return x86_64::detect_zeroinit(ctx, self.id(), self.name(), self.polarity());
+            #[cfg(not(feature = "x86_64"))]
+            unreachable!()
         } else {
             not_applicable(self.id(), self.name(), "unsupported arch")
         }
@@ -250,8 +254,11 @@ impl Check for LibcppHardeningCheck {
     fn run(&self, ctx: &AnalysisContext) -> CheckResult {
         if ctx.is_arm64() {
             arm64::detect_libcpp_hardening(ctx, self.id(), self.name(), self.polarity())
-        } else if ctx.is_x86_64() {
-            x86_64::detect_libcpp_hardening(ctx, self.id(), self.name(), self.polarity())
+        } else if cfg!(feature = "x86_64") && ctx.is_x86_64() {
+            #[cfg(feature = "x86_64")]
+            return x86_64::detect_libcpp_hardening(ctx, self.id(), self.name(), self.polarity());
+            #[cfg(not(feature = "x86_64"))]
+            unreachable!()
         } else {
             not_applicable(self.id(), self.name(), "unsupported arch")
         }
@@ -278,8 +285,11 @@ impl Check for BoundsSafetyCheck {
     fn run(&self, ctx: &AnalysisContext) -> CheckResult {
         if ctx.is_arm64() {
             arm64::detect_bounds_safety(ctx, self.id(), self.name(), self.polarity())
-        } else if ctx.is_x86_64() {
-            x86_64::detect_bounds_safety(ctx, self.id(), self.name(), self.polarity())
+        } else if cfg!(feature = "x86_64") && ctx.is_x86_64() {
+            #[cfg(feature = "x86_64")]
+            return x86_64::detect_bounds_safety(ctx, self.id(), self.name(), self.polarity());
+            #[cfg(not(feature = "x86_64"))]
+            unreachable!()
         } else {
             not_applicable(self.id(), self.name(), "unsupported arch")
         }
@@ -640,8 +650,11 @@ impl Check for StackCanaryInsnCheck {
     fn run(&self, ctx: &AnalysisContext) -> CheckResult {
         if ctx.is_arm64() {
             arm64::detect_stack_canary(ctx, self.id(), self.name(), self.polarity())
-        } else if ctx.is_x86_64() {
-            x86_64::detect_stack_canary(ctx, self.id(), self.name(), self.polarity())
+        } else if cfg!(feature = "x86_64") && ctx.is_x86_64() {
+            #[cfg(feature = "x86_64")]
+            return x86_64::detect_stack_canary(ctx, self.id(), self.name(), self.polarity());
+            #[cfg(not(feature = "x86_64"))]
+            unreachable!()
         } else {
             not_applicable(self.id(), self.name(), "unsupported arch")
         }

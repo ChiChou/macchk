@@ -12,6 +12,14 @@ Inspects executables, dylibs, and universal binaries for compiler hardening, cod
 cargo install --path .
 ```
 
+For x86_64 instruction analysis (requires Capstone):
+
+```
+cargo install --path . --features x86_64
+```
+
+x86_64 binaries are still recognized and checked at the header/symbol/codesign level without this feature. The feature flag only controls instruction-level pattern scanning (stack zero-init, libc++ hardening, bounds safety, stack canary patterns) which depends on the Capstone disassembly library.
+
 ## Usage
 
 ```
