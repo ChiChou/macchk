@@ -259,20 +259,22 @@ impl Check for SigningTypeCheck {
     }
 }
 
+/// CodeDirectory hash type mapping (from Apple Security CSCommon.h)
+/// These values appear at offset 37 in the CS_CodeDirectory structure.
 fn hash_type_name(ht: u8) -> &'static str {
     match ht {
         0 => "none",
         1 => "SHA-1",
-        2 => "SHA-256 (truncated)",
-        3 => "SHA-256",
-        4 => "SHA-384",
-        5 => "SHA-512",
+        2 => "SHA-256",                // kSecCodeSignatureHashSHA256
+        3 => "SHA-256 (truncated 20)", // kSecCodeSignatureHashSHA256Truncated (first 20 bytes of SHA-256)
+        4 => "SHA-384",                // kSecCodeSignatureHashSHA384
+        5 => "SHA-512",                // kSecCodeSignatureHashSHA512
         _ => "unknown",
     }
 }
 
 fn is_strong_hash(ht: u8) -> bool {
-    matches!(ht, 2..=5) // SHA-256 (truncated), SHA-256, SHA-384, SHA-512
+    matches!(ht, 2..=5) // SHA-256, SHA-256 (truncated), SHA-384, SHA-512
 }
 
 pub struct CodeSignHashTypeCheck;
