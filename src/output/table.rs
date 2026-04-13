@@ -16,7 +16,7 @@ pub fn print(result: &AnalysisResult) {
             "{}",
             format!("  {} ({})", slice.arch, slice.file_type).cyan().bold()
         );
-        println!("  {}", "=".repeat(70));
+
 
         let mut current_cat: Option<Category> = None;
 

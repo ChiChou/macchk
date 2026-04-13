@@ -1,3 +1,5 @@
+use goblin::mach::header::MH_EXECUTE;
+
 use crate::detection::{AnalysisContext, Check};
 use crate::types::*;
 
@@ -121,6 +123,23 @@ impl Check for PageZeroCheck {
         Polarity::Positive
     }
     fn run(&self, ctx: &AnalysisContext) -> CheckResult {
+        if ctx.macho.header.filetype != MH_EXECUTE {
+            return CheckResult {
+                id: self.id(),
+                name: self.name().into(),
+                category: self.category(),
+                polarity: Polarity::Info,
+                detected: false,
+                evidence: vec![Evidence {
+                    strategy: "filetype_guard".into(),
+                    description: "not applicable (MH_EXECUTE only)".into(),
+                    confidence: Confidence::Definitive,
+                    address: None,
+                    function_name: None,
+                }],
+                stats: None,
+            };
+        }
         let mut evidence = Vec::new();
         for seg in &ctx.macho.segments {
             let name = seg.name().unwrap_or("");

@@ -38,7 +38,7 @@ Extracted from imported symbols (nlist entries with N_EXT && N_UNDF). Quick-leve
 - **Impact:** Informational — binary is instrumented with ASan
 - **Notes:** ASan is a debug/test tool for detecting memory errors (use-after-free, buffer overflow). Not typically shipped in production binaries due to performance overhead.
 
-## UndefinedBehaviorSanitizer
+## UBSan
 
 - **Symbols:** prefixed with `__ubsan_` (e.g. `___ubsan_handle_add_overflow`)
 - **Impact:** Informational — binary is instrumented with UBSan
