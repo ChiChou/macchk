@@ -1,3 +1,5 @@
+use goblin::mach::header::MH_EXECUTE;
+
 use crate::detection::{AnalysisContext, Check};
 use crate::types::*;
 
@@ -39,6 +41,24 @@ fn flag_check(
     }
 }
 
+fn skip_non_executable(id: CheckId, name: &'static str) -> CheckResult {
+    CheckResult {
+        id,
+        name: name.into(),
+        category: Category::Header,
+        polarity: Polarity::Info,
+        detected: false,
+        evidence: vec![Evidence {
+            strategy: "filetype_guard".into(),
+            description: "not applicable (MH_EXECUTE only)".into(),
+            confidence: Confidence::Definitive,
+            address: None,
+            function_name: None,
+        }],
+        stats: None,
+    }
+}
+
 pub struct PieCheck;
 impl Check for PieCheck {
     fn id(&self) -> CheckId {
@@ -57,14 +77,27 @@ impl Check for PieCheck {
         Polarity::Positive
     }
     fn run(&self, ctx: &AnalysisContext) -> CheckResult {
-        flag_check(
+        if ctx.macho.header.filetype != MH_EXECUTE {
+            return skip_non_executable(self.id(), self.name());
+        }
+        let mut result = flag_check(
             ctx,
             self.id(),
             self.name(),
             self.polarity(),
             MH_PIE,
             "MH_PIE",
-        )
+        );
+        if ctx.is_arm64() && result.detected {
+            result.evidence.push(Evidence {
+                strategy: "arch_note".into(),
+                description: "mandatory on arm64 (kernel enforces PIE for all executables)".into(),
+                confidence: Confidence::Definitive,
+                address: None,
+                function_name: None,
+            });
+        }
+        result
     }
 }
 
@@ -86,14 +119,27 @@ impl Check for NoHeapExecCheck {
         Polarity::Positive
     }
     fn run(&self, ctx: &AnalysisContext) -> CheckResult {
-        flag_check(
+        if ctx.macho.header.filetype != MH_EXECUTE {
+            return skip_non_executable(self.id(), self.name());
+        }
+        let mut result = flag_check(
             ctx,
             self.id(),
             self.name(),
             self.polarity(),
             MH_NO_HEAP_EXECUTION,
             "MH_NO_HEAP_EXECUTION",
-        )
+        );
+        if ctx.is_arm64() {
+            result.evidence.push(Evidence {
+                strategy: "arch_note".into(),
+                description: "arm64 heaps are always non-executable regardless of this flag".into(),
+                confidence: Confidence::Definitive,
+                address: None,
+                function_name: None,
+            });
+        }
+        result
     }
 }
 
@@ -115,14 +161,27 @@ impl Check for AllowStackExecCheck {
         Polarity::Negative
     }
     fn run(&self, ctx: &AnalysisContext) -> CheckResult {
-        flag_check(
+        if ctx.macho.header.filetype != MH_EXECUTE {
+            return skip_non_executable(self.id(), self.name());
+        }
+        let mut result = flag_check(
             ctx,
             self.id(),
             self.name(),
             self.polarity(),
             MH_ALLOW_STACK_EXECUTION,
             "MH_ALLOW_STACK_EXECUTION",
-        )
+        );
+        if result.detected {
+            result.evidence.push(Evidence {
+                strategy: "arch_note".into(),
+                description: "no effect on modern builds with code signing enforcement (CONFIG_ENFORCE_SIGNED_CODE)".into(),
+                confidence: Confidence::Definitive,
+                address: None,
+                function_name: None,
+            });
+        }
+        result
     }
 }
 
