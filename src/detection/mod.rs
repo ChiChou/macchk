@@ -154,6 +154,7 @@ fn all_checks() -> Vec<Box<dyn Check>> {
         Box::new(sections::PacSectionsCheck),
         Box::new(sections::DataConstCheck),
         Box::new(sections::PageZeroCheck),
+        Box::new(sections::SegmentPermissionsCheck),
         // Category F: Instructions
         Box::new(instructions::PacInstructionsCheck),
         Box::new(instructions::StackZeroInitCheck),
