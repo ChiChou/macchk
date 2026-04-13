@@ -42,7 +42,7 @@ Classification based on CodeDirectory and CMS signature:
 
 - **Field:** `hashType` at offset 37 in CodeDirectory
 - **Impact:** Positive — strong hash algorithms detected
-- **Values:** 1=SHA-1 (weak), 2=SHA-256 truncated, 3=SHA-256, 4=SHA-384, 5=SHA-512
+- **Values:** 0=none, 1=SHA-1 (weak), 2=SHA-256, 3=SHA-256 (truncated 20 bytes), 4=SHA-384, 5=SHA-512
 - **Notes:** Collects hash types from all CodeDirectories (primary + alternatives at slot 0x1000+). SHA-1-only signatures are flagged as weak. Modern binaries typically use SHA-256.
 
 ## Launch Constraints
