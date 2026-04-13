@@ -101,11 +101,7 @@ impl Check for StackCanaryCheck {
 }
 
 /// Obj-C ARC runtime symbols.
-const OBJC_ARC_SYMBOLS: &[&str] = &[
-    "_objc_release",
-    "_objc_retain",
-    "_objc_autoreleasePoolPush",
-];
+const OBJC_ARC_SYMBOLS: &[&str] = &["_objc_release", "_objc_retain", "_objc_autoreleasePoolPush"];
 
 /// Swift ARC runtime symbols.
 const SWIFT_ARC_SYMBOLS: &[&str] = &[
@@ -235,7 +231,11 @@ impl Check for TypedAllocatorsCheck {
             "__ZdlPvSt19__type_descriptor_t",
             "__ZdaPvSt19__type_descriptor_t",
         ];
-        let all_symbols: Vec<&str> = c_symbols.iter().chain(cxx_symbols.iter()).copied().collect();
+        let all_symbols: Vec<&str> = c_symbols
+            .iter()
+            .chain(cxx_symbols.iter())
+            .copied()
+            .collect();
         symbol_check(
             ctx,
             self.id(),
@@ -260,13 +260,12 @@ fn prefix_symbol_check(
     let mut found = Vec::new();
     for n in collect_symbol_names(ctx) {
         let stripped = n.strip_prefix('_').unwrap_or(n);
-        if stripped.starts_with(prefix)
-            && !found.iter().any(|f: &String| f == n) {
-                found.push(n.to_string());
-                if found.len() >= max_evidence {
-                    break;
-                }
+        if stripped.starts_with(prefix) && !found.iter().any(|f: &String| f == n) {
+            found.push(n.to_string());
+            if found.len() >= max_evidence {
+                break;
             }
+        }
     }
     let detected = !found.is_empty();
     let evidence: Vec<Evidence> = found
@@ -296,7 +295,7 @@ impl Check for SanitizerAsanCheck {
         CheckId::SanitizerAsan
     }
     fn name(&self) -> &'static str {
-        "AddressSanitizer"
+        "ASan"
     }
     fn min_level(&self) -> DetectionLevel {
         DetectionLevel::Quick
@@ -326,7 +325,7 @@ impl Check for SanitizerUbsanCheck {
         CheckId::SanitizerUbsan
     }
     fn name(&self) -> &'static str {
-        "UndefinedBehaviorSanitizer"
+        "UBSan"
     }
     fn min_level(&self) -> DetectionLevel {
         DetectionLevel::Quick
@@ -391,10 +390,9 @@ impl Check for FortifySourceCheck {
         for n in collect_symbol_names(ctx) {
             // Strip all leading underscores for matching
             let base = n.trim_start_matches('_');
-            if fortify_suffixes.contains(&base)
-                && !found.iter().any(|f: &String| f == n) {
-                    found.push(n.to_string());
-                }
+            if fortify_suffixes.contains(&base) && !found.iter().any(|f: &String| f == n) {
+                found.push(n.to_string());
+            }
         }
         let detected = !found.is_empty();
         let evidence: Vec<Evidence> = found
