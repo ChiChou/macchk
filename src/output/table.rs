@@ -81,6 +81,22 @@ pub fn print(result: &AnalysisResult) {
                 );
             }
         }
+
+        #[cfg(not(feature = "x86_64"))]
+        if slice.arch == "x86_64" {
+            println!();
+            println!(
+                "    {}",
+                "note: x86_64 instruction analysis requires the 'x86_64' feature"
+                    .yellow()
+            );
+            println!(
+                "    {}",
+                "      rebuild with: cargo install macchk --features x86_64"
+                    .yellow()
+            );
+        }
+
         println!();
     }
 }
