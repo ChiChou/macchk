@@ -37,6 +37,7 @@ pub fn print(result: &AnalysisResult) {
                 CheckId::LaunchConstraints => tags.push("LWCR"),
                 CheckId::StackCanaryInsn => tags.push("Canary-Insn"),
                 CheckId::JumpTableHardening => tags.push("JT-Hard"),
+                CheckId::SegmentPermissions => tags.push("RWX!"),
                 _ => {}
             }
         }
