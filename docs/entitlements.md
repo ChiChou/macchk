@@ -54,24 +54,23 @@ These entitlements weaken the hardened runtime by granting specific exceptions:
 | `com.apple.security.cs.allow-unsigned-executable-memory` | WEAKENS | Allows unsigned executable memory pages |
 | `com.apple.security.cs.allow-dyld-environment-variables` | WEAKENS | Allows DYLD_* env vars (library injection vector) |
 | `com.apple.security.cs.disable-executable-page-protection` | WEAKENS | Disables W^X executable page protection |
-| `com.apple.security.cs.debugger` | WEAKENS | Debugger entitlement (can attach to other processes) |
+| `com.apple.security.cs.debugger` | INFO | Can act as debugger for other processes |
 | `dynamic-codesigning` | WEAKENS | Allows dynamic code signing (JIT, self-modifying code) |
-| `com.apple.internal.map-jit-without-sandbox` | WEAKENS | Allows MAP_JIT without sandbox (internal only) |
 
 ## Debugging & Task Control
 
 | Entitlement | Impact | Description |
 |-------------|--------|-------------|
 | `com.apple.security.get-task-allow` | WEAKENS | Allows task_for_pid — process is debuggable. **Must be removed for production.** |
-| `task_for_pid-allow` | WEAKENS | Allows task_for_pid on arbitrary processes |
-| `internal.com.apple.system-task-ports.control` | WEAKENS | Grants control over system task ports |
-| `com.apple.security.get-movable-control-port` | WEAKENS | Allows getting movable control port |
-| `com.apple.private.cs.debugger` | WEAKENS | Allows mapping pages with invalid code signatures |
-| `com.apple.private.thread-set-state` | WEAKENS | Allows setting arbitrary thread state (code injection) |
-| `com.apple.private.set-exception-port` | WEAKENS | Allows setting custom exception ports |
-| `com.apple.private.amfi.can-set-exception-ports` | WEAKENS | Allows setting exception ports (bypasses AMFI) |
-| `com.apple.private.host-exception-port-override` | WEAKENS | Allows overriding host exception port |
-| `com.apple.private.delegate-signals` | WEAKENS | Allows signal delegation between processes |
+| `task_for_pid-allow` | INFO | Can call task_for_pid on other processes |
+| `internal.com.apple.system-task-ports.control` | INFO | Internal control port access (Apple Internal only) |
+| `com.apple.security.get-movable-control-port` | INFO | Can obtain movable control port for tasks |
+| `com.apple.private.cs.debugger` | INFO | Can map pages with invalid code signatures in debugged processes |
+| `com.apple.private.thread-set-state` | INFO | Can modify thread register state |
+| `com.apple.private.set-exception-port` | INFO | Can set exception ports on tasks/threads |
+| `com.apple.private.amfi.can-set-exception-ports` | INFO | Can set exception ports on tasks/threads, bypassing AMFI restrictions |
+| `com.apple.private.host-exception-port-override` | INFO | Can override host exception port |
+| `com.apple.private.delegate-signals` | INFO | Can delegate signals between processes |
 
 ## Library Validation
 
@@ -79,14 +78,14 @@ These entitlements weaken the hardened runtime by granting specific exceptions:
 |-------------|--------|-------------|
 | `com.apple.private.security.clear-library-validation` | WEAKENS | Clears library validation via CS_OPS_CLEAR_LV |
 | `com.apple.private.cs.automator-plugins` | WEAKENS | Permits loading untrusted automator plugins |
-| `com.apple.private.amfi.can-allow-non-platform` | WEAKENS | Allows loading non-platform code (bypasses AMFI) |
+| `com.apple.private.amfi.can-allow-non-platform` | INFO | Can toggle system-wide allow-only-platform-code policy via AMFI sysctl |
 
 ## Sandbox
 
 | Entitlement | Impact | Description |
 |-------------|--------|-------------|
 | `com.apple.security.app-sandbox` | STRENGTHENS | App Sandbox (restricts filesystem/network/IPC) |
-| `com.apple.private.security.no-sandbox` | WEAKENS | Completely disables sandbox restrictions |
+| `com.apple.private.security.no-sandbox` | WEAKENS | Disables sandbox (DEBUG/DEVELOPMENT kernels only) |
 
 ### Temporary Exceptions
 
@@ -141,23 +140,23 @@ Each unique ID gets a distinct random key via `generate_jop_key()`. The dyld sha
 
 | Entitlement | Impact | Description |
 |-------------|--------|-------------|
-| `com.apple.private.unload-trust-cache` | WEAKENS | Allows trust cache manipulation |
-| `com.apple.private.pmap.load-trust-cache` | WEAKENS | Loads trust cache into pmap |
+| `com.apple.private.unload-trust-cache` | INFO | Can unload trust caches |
+| `com.apple.private.pmap.load-trust-cache` | INFO | Can load trust caches into pmap |
 
 ## Diagnostics & Coredump
 
 | Entitlement | Impact | Description |
 |-------------|--------|-------------|
-| `com.apple.private.enable-coredump-on-panic` | WEAKENS | Triggers coredump on panic (may expose secrets) |
-| `com.apple.private.custom-coredump-location` | WEAKENS | Allows custom coredump file location |
+| `com.apple.private.enable-coredump-on-panic` | INFO | Triggers userspace coredump on kernel panic |
+| `com.apple.private.custom-coredump-location` | INFO | Custom coredump file path |
 | `com.apple.private.coredump-encryption-key` | INFO | Provides coredump encryption capability |
 
 ## Kernel & System Access
 
 | Entitlement | Impact | Description |
 |-------------|--------|-------------|
-| `com.apple.private.ktrace-allow` | WEAKENS | Allows kernel tracing access |
-| `com.apple.private.stackshot` | WEAKENS | Allows stackshot capture |
-| `com.apple.private.read-environment-variables` | WEAKENS | Reads other processes' environment variables |
-| `com.apple.private.task_policy` | WEAKENS | Allows modification of task policy settings |
-| `com.apple.private.spawn-subsystem-root` | WEAKENS | Allows spawning with subsystem root capabilities |
+| `com.apple.private.ktrace-allow` | INFO | Can perform kernel tracing |
+| `com.apple.private.stackshot` | INFO | Can capture kernel stackshots |
+| `com.apple.private.read-environment-variables` | INFO | Can read other processes' environment variables via sysctl |
+| `com.apple.private.task_policy` | INFO | Can modify task policy settings |
+| `com.apple.private.spawn-subsystem-root` | INFO | Can spawn with subsystem root capabilities |
