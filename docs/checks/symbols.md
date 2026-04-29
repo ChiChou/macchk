@@ -30,7 +30,7 @@ Extracted from imported symbols (nlist entries with N_EXT && N_UNDF). Quick-leve
 - **Impact:** Positive — type-isolated allocation prevents type confusion exploitation
 - **Build settings:** `CLANG_ENABLE_C_TYPED_ALLOCATOR_SUPPORT`, `CLANG_ENABLE_CPLUSPLUS_TYPED_ALLOCATOR_SUPPORT` (both default to `ENABLE_ENHANCED_SECURITY`)
 - **Compiler flags:** C: `-ftyped-memory-operations`, C++: `-ftyped-cxx-new-delete` `-ftyped-cxx-delete`
-- **Notes:** Each allocation site gets a 64-bit type hash. Memory for different types is isolated.
+- **Notes:** Each allocation site gets a 64-bit type hash. Memory for different types is isolated. Standard/Full mode also performs instruction-level call-site validation and reports immediate `type_id` hashes when recoverable.
 
 ## AddressSanitizer
 

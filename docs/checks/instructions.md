@@ -50,6 +50,13 @@ Requires Standard or Full detection level. arm64 uses raw binary pattern matchin
 - **Detection:** Raw binary pattern matching with full encoding masks (capstone may not recognize MTE on all hosts)
 - **Notes:** Presence indicates the binary was compiled with `-march=armv8.5-a+memtag`. Requires hardware MTE support (Apple Silicon M-series with `com.apple.security.hardened-process.checked-allocations` entitlement).
 
+## Typed Allocators (instruction-level)
+
+- **arm64 detection:** Resolves `_malloc_type_*` and typed C++ operator stubs from `__stubs`/`__auth_stubs`, then detects direct `BL` calls and tail-call `B` branches to those stubs
+- **x86_64 detection:** Resolves the same stubs and detects direct `CALL`/`JMP` transfers when built with the `x86_64` feature
+- **Evidence:** Reports the call target and, when encoded as an immediate argument, the typed malloc `type_id` hash
+- **Notes:** Complements the symbol-level check (Quick) by proving the imported typed allocator is actually called from code. Full mode reports function coverage and all call sites found.
+
 ## Jump Table Hardening (arm64 only) — experimental
 
 - **Compiler flag:** `-faarch64-jump-table-hardening`

@@ -18,7 +18,7 @@ For x86_64 instruction analysis (requires Capstone):
 cargo install --path . --features x86_64
 ```
 
-x86_64 binaries are still recognized and checked at the header/symbol/codesign level without this feature. The feature flag only controls instruction-level pattern scanning (stack zero-init, libc++ hardening, bounds safety, stack canary patterns) which depends on the Capstone disassembly library.
+x86_64 binaries are still recognized and checked at the header/symbol/codesign level without this feature. The feature flag only controls instruction-level pattern scanning (stack zero-init, libc++ hardening, bounds safety, stack canary patterns, typed allocator call sites) which depends on the Capstone disassembly library.
 
 ## Usage
 
@@ -63,7 +63,7 @@ $ macchk --brief /sbin/launchd /usr/libexec/amfid /usr/libexec/xpcproxy
 
 **Sections**: PAC markers, `__DATA_CONST`, `__PAGEZERO`, Segment Permissions
 
-**Instructions**: PAC instructions, Stack Zero-Init (`-ftrivial-auto-var-init=zero`), libc++ Hardening, C Bounds Safety (`-fbounds-safety`), MTE instructions, Stack Canary patterns (resolves `___stack_chk_guard` GOT + `___stack_chk_fail` stub), Jump Table Hardening
+**Instructions**: PAC instructions, Stack Zero-Init (`-ftrivial-auto-var-init=zero`), libc++ Hardening, C Bounds Safety (`-fbounds-safety`), MTE instructions, Stack Canary patterns (resolves `___stack_chk_guard` GOT + `___stack_chk_fail` stub), Typed Allocator call sites (resolves typed malloc stubs and reports `type_id` when immediate), Jump Table Hardening
 
 ## Output Formats
 

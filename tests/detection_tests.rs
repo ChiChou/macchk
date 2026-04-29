@@ -149,6 +149,45 @@ fn typed_allocators_not_detected_in_baseline() {
     );
 }
 
+#[test]
+fn typed_allocators_insn_detected_with_type_id() {
+    let path = fixture("exp6_typed");
+    assert!(
+        check_detected(
+            &path,
+            DetectionLevel::Standard,
+            CheckId::TypedAllocatorsInsn
+        ),
+        "expected typed allocator call-site detection"
+    );
+
+    let evidence = get_check_evidence(
+        &path,
+        DetectionLevel::Standard,
+        CheckId::TypedAllocatorsInsn,
+    );
+    assert!(
+        evidence
+            .iter()
+            .any(|e| e.contains("_malloc_type_") && e.contains("type_id=0x")),
+        "expected typed allocator evidence with type_id, got: {:?}",
+        evidence
+    );
+}
+
+#[test]
+fn typed_allocators_insn_not_detected_in_baseline() {
+    let path = fixture("exp6_baseline");
+    assert!(
+        check_not_detected(
+            &path,
+            DetectionLevel::Standard,
+            CheckId::TypedAllocatorsInsn
+        ),
+        "expected no typed allocator call sites in baseline"
+    );
+}
+
 // Exp 7: FORTIFY_SOURCE
 
 #[test]
@@ -263,6 +302,7 @@ fn canary_insn_not_detected_arm64_unprotected() {
 }
 
 #[test]
+#[cfg(feature = "x86_64")]
 fn canary_insn_detected_x86() {
     let path = fixture("exp11_canary_x86");
     assert!(
@@ -450,6 +490,7 @@ fn full_mode_provides_coverage_stats() {
 // x86_64 cross-architecture tests
 
 #[test]
+#[cfg(feature = "x86_64")]
 fn zeroinit_detected_x86() {
     let path = fixture("exp1_zeroinit_x86");
     assert!(
@@ -468,6 +509,7 @@ fn zeroinit_not_detected_x86_baseline() {
 }
 
 #[test]
+#[cfg(feature = "x86_64")]
 fn bounds_safety_detected_x86() {
     let path = fixture("exp3_bounds_x86");
     assert!(
@@ -477,6 +519,7 @@ fn bounds_safety_detected_x86() {
 }
 
 #[test]
+#[cfg(feature = "x86_64")]
 fn libcpp_hardening_detected_x86() {
     let path = fixture("exp4_hardened_x86");
     assert!(
