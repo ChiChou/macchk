@@ -339,7 +339,11 @@ const S_SYMBOL_STUBS: u8 = 0x08;
 ///
 /// Matches both `__stubs`/`__auth_stubs` (type 0x08) and
 /// `__got`/`__la_symbol_ptr` (type 0x06).
-fn find_section_by_type(macho: &MachO, raw_bytes: &[u8], section_type: u8) -> Option<RawSectionInfo> {
+fn find_section_by_type(
+    macho: &MachO,
+    raw_bytes: &[u8],
+    section_type: u8,
+) -> Option<RawSectionInfo> {
     let is64 = macho.header.magic == 0xFEEDFACF || macho.header.magic == 0xCFFAEDFE;
 
     for lc in &macho.load_commands {
@@ -503,8 +507,40 @@ pub fn find_stub_for_symbol(macho: &MachO, raw_bytes: &[u8], target: &str) -> Op
         .map(|(addr, _)| addr)
 }
 
+fn symbol_name_matches(name: &str, target: &str) -> bool {
+    name.strip_prefix('_').unwrap_or(name) == target.strip_prefix('_').unwrap_or(target)
+}
+
+/// Find stub addresses for any of the requested symbol names.
+pub fn find_stubs_for_symbols(
+    macho: &MachO,
+    raw_bytes: &[u8],
+    targets: &[&str],
+) -> HashMap<u64, String> {
+    let Some(stubs) = find_section_by_type(macho, raw_bytes, S_SYMBOL_STUBS) else {
+        return HashMap::new();
+    };
+    let stub_size = stubs.reserved2 as u64;
+    if stub_size == 0 {
+        return HashMap::new();
+    }
+
+    resolve_indirect_section(macho, raw_bytes, &stubs, stub_size)
+        .into_iter()
+        .filter(|(_, name)| {
+            targets
+                .iter()
+                .any(|target| symbol_name_matches(name, target))
+        })
+        .collect()
+}
+
 /// Find all sections matching a given type.
-fn find_all_sections_by_type(macho: &MachO, raw_bytes: &[u8], section_type: u8) -> Vec<RawSectionInfo> {
+fn find_all_sections_by_type(
+    macho: &MachO,
+    raw_bytes: &[u8],
+    section_type: u8,
+) -> Vec<RawSectionInfo> {
     let is64 = macho.header.magic == 0xFEEDFACF || macho.header.magic == 0xCFFAEDFE;
     let mut result = Vec::new();
 
@@ -602,6 +638,37 @@ pub fn find_got_for_symbol(macho: &MachO, raw_bytes: &[u8], target: &str) -> Opt
         }
     }
     None
+}
+
+pub struct TypedAllocatorsInsnCheck;
+impl Check for TypedAllocatorsInsnCheck {
+    fn id(&self) -> CheckId {
+        CheckId::TypedAllocatorsInsn
+    }
+    fn name(&self) -> &'static str {
+        "Typed Allocators (insn)"
+    }
+    fn min_level(&self) -> DetectionLevel {
+        DetectionLevel::Standard
+    }
+    fn category(&self) -> Category {
+        Category::Instructions
+    }
+    fn polarity(&self) -> Polarity {
+        Polarity::Positive
+    }
+    fn run(&self, ctx: &AnalysisContext) -> CheckResult {
+        if ctx.is_arm64() {
+            arm64::detect_typed_allocators(ctx, self.id(), self.name(), self.polarity())
+        } else if cfg!(feature = "x86_64") && ctx.is_x86_64() {
+            #[cfg(feature = "x86_64")]
+            return x86_64::detect_typed_allocators(ctx, self.id(), self.name(), self.polarity());
+            #[cfg(not(feature = "x86_64"))]
+            unreachable!()
+        } else {
+            not_applicable(self.id(), self.name(), "unsupported arch")
+        }
+    }
 }
 
 pub struct JumpTableHardeningCheck;

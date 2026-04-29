@@ -2,7 +2,7 @@ use capstone::arch::x86::X86Insn;
 use capstone::prelude::*;
 use std::collections::HashSet;
 
-use crate::detection::instructions::{get_symbol_name, get_text_section};
+use crate::detection::instructions::{find_stubs_for_symbols, get_symbol_name, get_text_section};
 use crate::detection::AnalysisContext;
 use crate::types::*;
 
@@ -324,6 +324,165 @@ pub fn detect_bounds_safety(
                         insn.address()
                     ),
                     confidence: Confidence::High,
+                    address: Some(insn.address()),
+                    function_name: Some(fname),
+                });
+            }
+            if !is_full {
+                break;
+            }
+        }
+        if func_found {
+            stats.functions_with_feature += 1;
+        }
+        if !is_full && !evidence.is_empty() {
+            break;
+        }
+    }
+
+    CheckResult {
+        id,
+        name: name.into(),
+        category: Category::Instructions,
+        polarity,
+        detected: !evidence.is_empty(),
+        evidence,
+        stats: if is_full { Some(stats) } else { None },
+    }
+}
+
+// Typed Allocators
+
+const TYPED_ALLOCATOR_SYMBOLS: &[&str] = &[
+    "_malloc_type_malloc",
+    "_malloc_type_calloc",
+    "_malloc_type_realloc",
+    "_malloc_type_valloc",
+    "_malloc_type_aligned_alloc",
+    "__ZnwmSt19__type_descriptor_t",
+    "__ZnamSt19__type_descriptor_t",
+    "__ZdlPvSt19__type_descriptor_t",
+    "__ZdaPvSt19__type_descriptor_t",
+];
+
+fn typed_allocator_tag_registers(symbol: &str) -> Option<&'static [&'static str]> {
+    let base = symbol.trim_start_matches('_');
+    match base {
+        "malloc_type_malloc" | "malloc_type_valloc" => Some(&["rsi", "esi"]),
+        "malloc_type_calloc" | "malloc_type_realloc" | "malloc_type_aligned_alloc" => {
+            Some(&["rdx", "edx"])
+        }
+        "ZnwmSt19__type_descriptor_t"
+        | "ZnamSt19__type_descriptor_t"
+        | "ZdlPvSt19__type_descriptor_t"
+        | "ZdaPvSt19__type_descriptor_t" => Some(&["rsi", "esi"]),
+        _ => None,
+    }
+}
+
+fn parse_x86_immediate(value: &str) -> Option<u64> {
+    let value = value.trim().trim_start_matches('$');
+    if let Some(hex) = value.strip_prefix("0x") {
+        u64::from_str_radix(hex, 16).ok()
+    } else {
+        value.parse::<u64>().ok()
+    }
+}
+
+fn find_x86_immediate_arg(
+    insns: &[&capstone::Insn],
+    branch_index: usize,
+    registers: &[&str],
+) -> Option<u64> {
+    let start = branch_index.saturating_sub(10);
+    for insn in insns[start..branch_index].iter().rev() {
+        let mn = insn.mnemonic().unwrap_or("");
+        if mn != "mov" && mn != "movabs" {
+            continue;
+        }
+        let op = insn.op_str().unwrap_or("");
+        let Some((dst, src)) = op.split_once(',') else {
+            continue;
+        };
+        if !registers.iter().any(|reg| dst.trim() == *reg) {
+            continue;
+        }
+        if let Some(value) = parse_x86_immediate(src) {
+            return Some(value);
+        }
+    }
+    None
+}
+
+pub fn detect_typed_allocators(
+    ctx: &AnalysisContext,
+    id: CheckId,
+    name: &'static str,
+    polarity: Polarity,
+) -> CheckResult {
+    let (text_data, text_base) = match get_text_section(ctx) {
+        Some(v) => v,
+        None => return empty_result(id, name, polarity),
+    };
+    let cs = match make_engine() {
+        Ok(v) => v,
+        Err(_) => return empty_result(id, name, polarity),
+    };
+    let stubs = find_stubs_for_symbols(ctx.macho, ctx.raw_bytes, TYPED_ALLOCATOR_SYMBOLS);
+    if stubs.is_empty() {
+        return empty_result(id, name, polarity);
+    }
+
+    let bounds = ctx.function_boundaries();
+    let is_full = ctx.level == DetectionLevel::Full;
+    let mut evidence = Vec::new();
+    let mut stats = CoverageStats::default();
+
+    for &(fstart, fend) in bounds {
+        let off = (fstart - text_base) as usize;
+        let sz = (fend - fstart) as usize;
+        if off + sz > text_data.len() {
+            continue;
+        }
+
+        let insns = match cs.disasm_all(&text_data[off..off + sz], fstart) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        let insn_vec: Vec<_> = insns.as_ref().iter().collect();
+        stats.functions_scanned += 1;
+
+        let mut func_found = false;
+        for (i, insn) in insn_vec.iter().enumerate() {
+            let mn = insn.mnemonic().unwrap_or("");
+            if mn != "call" && mn != "jmp" {
+                continue;
+            }
+            let target = parse_x86_branch_target(insn.op_str().unwrap_or(""));
+            let Some(symbol) = stubs.get(&target) else {
+                continue;
+            };
+
+            func_found = true;
+            stats.sites_found += 1;
+
+            if evidence.is_empty() || is_full {
+                let fname = get_symbol_name(ctx.macho, fstart);
+                let type_id = typed_allocator_tag_registers(symbol)
+                    .and_then(|registers| find_x86_immediate_arg(&insn_vec, i, registers));
+                let description = if let Some(type_id) = type_id {
+                    format!("{} {} in {} (type_id={:#018x})", mn, symbol, fname, type_id)
+                } else {
+                    format!("{} {} in {}", mn, symbol, fname)
+                };
+                evidence.push(Evidence {
+                    strategy: "call_site".into(),
+                    description,
+                    confidence: if type_id.is_some() {
+                        Confidence::Definitive
+                    } else {
+                        Confidence::High
+                    },
                     address: Some(insn.address()),
                     function_name: Some(fname),
                 });

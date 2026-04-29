@@ -5,7 +5,9 @@ pub fn print(result: &AnalysisResult) {
         let mut tags = Vec::new();
 
         for check in &slice.checks {
-            if !check.detected { continue; }
+            if !check.detected {
+                continue;
+            }
             match check.id {
                 CheckId::Pie => tags.push("PIE"),
                 CheckId::NoHeapExec => tags.push("NX-Heap"),
@@ -36,6 +38,7 @@ pub fn print(result: &AnalysisResult) {
                 CheckId::CodeSignHashType => tags.push("SHA256+"),
                 CheckId::LaunchConstraints => tags.push("LWCR"),
                 CheckId::StackCanaryInsn => tags.push("Canary-Insn"),
+                CheckId::TypedAllocatorsInsn => tags.push("TypedAlloc-Insn"),
                 CheckId::JumpTableHardening => tags.push("JT-Hard"),
                 CheckId::SegmentPermissions => tags.push("RWX!"),
                 _ => {}

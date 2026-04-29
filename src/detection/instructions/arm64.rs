@@ -4,7 +4,7 @@
 //! We express each detection target as (mask, value) pairs applied directly
 //! to the instruction stream — no disassembly needed.
 
-use crate::detection::instructions::{get_symbol_name, get_text_section};
+use crate::detection::instructions::{find_stubs_for_symbols, get_symbol_name, get_text_section};
 use crate::detection::AnalysisContext;
 use crate::types::*;
 
@@ -819,6 +819,7 @@ pub fn detect_mte(
 // BL imm26: 0x94000000 | (imm26 & 0x3FFFFFF)
 const BL_MASK: u32 = 0xFC000000;
 const BL_VALUE: u32 = 0x94000000;
+const B_VALUE: u32 = 0x14000000;
 
 // ADRP Xd, #page: 1_immlo(2)_10000_immhi(19)_Rd(5)
 const ADRP_MASK: u32 = 0x9F000000;
@@ -873,6 +874,189 @@ fn bl_target(word: u32, pc: u64) -> u64 {
         imm26
     };
     pc.wrapping_add((signed as i64 * 4) as u64)
+}
+
+const TYPED_ALLOCATOR_SYMBOLS: &[&str] = &[
+    "_malloc_type_malloc",
+    "_malloc_type_calloc",
+    "_malloc_type_realloc",
+    "_malloc_type_valloc",
+    "_malloc_type_aligned_alloc",
+    "__ZnwmSt19__type_descriptor_t",
+    "__ZnamSt19__type_descriptor_t",
+    "__ZdlPvSt19__type_descriptor_t",
+    "__ZdaPvSt19__type_descriptor_t",
+];
+
+#[derive(Clone, Copy)]
+enum MoveWideKind {
+    Movn,
+    Movz,
+    Movk,
+}
+
+fn typed_allocator_tag_register(symbol: &str) -> Option<u32> {
+    let base = symbol.trim_start_matches('_');
+    match base {
+        "malloc_type_malloc" | "malloc_type_valloc" => Some(1),
+        "malloc_type_calloc" | "malloc_type_realloc" | "malloc_type_aligned_alloc" => Some(2),
+        // C++ typed new/delete pass the type descriptor after the primary pointer/size argument.
+        "ZnwmSt19__type_descriptor_t"
+        | "ZnamSt19__type_descriptor_t"
+        | "ZdlPvSt19__type_descriptor_t"
+        | "ZdaPvSt19__type_descriptor_t" => Some(1),
+        _ => None,
+    }
+}
+
+fn decode_move_wide_to_reg(word: u32, target_reg: u32) -> Option<(MoveWideKind, u32, u16)> {
+    if word >> 31 == 0 || rd(word) != target_reg {
+        return None;
+    }
+
+    let kind = match word & 0x7F800000 {
+        0x12800000 => MoveWideKind::Movn,
+        0x52800000 => MoveWideKind::Movz,
+        0x72800000 => MoveWideKind::Movk,
+        _ => return None,
+    };
+    let shift = ((word >> 21) & 0x3) * 16;
+    let imm = ((word >> 5) & 0xFFFF) as u16;
+    Some((kind, shift, imm))
+}
+
+fn find_immediate_arg(words: &[u32], branch_index: usize, reg: u32) -> Option<u64> {
+    let start = branch_index.saturating_sub(10);
+    let mut movk_parts: [Option<u16>; 4] = [None, None, None, None];
+
+    for j in (start..branch_index).rev() {
+        let Some((kind, shift, imm)) = decode_move_wide_to_reg(words[j], reg) else {
+            continue;
+        };
+        let part = (shift / 16) as usize;
+        match kind {
+            MoveWideKind::Movk => {
+                movk_parts[part] = Some(imm);
+            }
+            MoveWideKind::Movz => {
+                let mut value = (imm as u64) << shift;
+                for (idx, part_imm) in movk_parts.iter().enumerate() {
+                    if let Some(part_imm) = part_imm {
+                        let part_shift = (idx as u32) * 16;
+                        value &= !(0xFFFF_u64 << part_shift);
+                        value |= (*part_imm as u64) << part_shift;
+                    }
+                }
+                return Some(value);
+            }
+            MoveWideKind::Movn => {
+                let mut value = !((imm as u64) << shift);
+                for (idx, part_imm) in movk_parts.iter().enumerate() {
+                    if let Some(part_imm) = part_imm {
+                        let part_shift = (idx as u32) * 16;
+                        value &= !(0xFFFF_u64 << part_shift);
+                        value |= (*part_imm as u64) << part_shift;
+                    }
+                }
+                return Some(value);
+            }
+        }
+    }
+
+    None
+}
+
+pub fn detect_typed_allocators(
+    ctx: &AnalysisContext,
+    id: CheckId,
+    name: &'static str,
+    polarity: Polarity,
+) -> CheckResult {
+    let (text_data, text_base) = match get_text_section(ctx) {
+        Some(v) => v,
+        None => return empty_result(id, name, polarity),
+    };
+    let stubs = find_stubs_for_symbols(ctx.macho, ctx.raw_bytes, TYPED_ALLOCATOR_SYMBOLS);
+    if stubs.is_empty() {
+        return empty_result(id, name, polarity);
+    }
+
+    let words = to_words(&text_data);
+    let bounds = ctx.function_boundaries();
+    let is_full = ctx.level == DetectionLevel::Full;
+    let mut evidence = Vec::new();
+    let mut stats = CoverageStats::default();
+
+    for &(fstart, fend) in bounds {
+        let w_start = ((fstart - text_base) / 4) as usize;
+        let w_end = ((fend - text_base) / 4) as usize;
+        if w_end > words.len() {
+            continue;
+        }
+        stats.functions_scanned += 1;
+
+        let mut func_found = false;
+        for i in w_start..w_end {
+            let w = words[i];
+            let branch_kind = match w & BL_MASK {
+                BL_VALUE => "bl",
+                B_VALUE => "b",
+                _ => continue,
+            };
+            let pc = text_base + (i as u64) * 4;
+            let target = bl_target(w, pc);
+            let Some(symbol) = stubs.get(&target) else {
+                continue;
+            };
+
+            func_found = true;
+            stats.sites_found += 1;
+
+            if evidence.is_empty() || is_full {
+                let fname = get_symbol_name(ctx.macho, fstart);
+                let type_id = typed_allocator_tag_register(symbol)
+                    .and_then(|reg| find_immediate_arg(&words, i, reg));
+                let description = if let Some(type_id) = type_id {
+                    format!(
+                        "{} {} in {} (type_id={:#018x})",
+                        branch_kind, symbol, fname, type_id
+                    )
+                } else {
+                    format!("{} {} in {}", branch_kind, symbol, fname)
+                };
+                evidence.push(Evidence {
+                    strategy: "call_site".into(),
+                    description,
+                    confidence: if type_id.is_some() {
+                        Confidence::Definitive
+                    } else {
+                        Confidence::High
+                    },
+                    address: Some(pc),
+                    function_name: Some(fname),
+                });
+            }
+            if !is_full {
+                break;
+            }
+        }
+        if func_found {
+            stats.functions_with_feature += 1;
+        }
+        if !is_full && !evidence.is_empty() {
+            break;
+        }
+    }
+
+    CheckResult {
+        id,
+        name: name.into(),
+        category: Category::Instructions,
+        polarity,
+        detected: !evidence.is_empty(),
+        evidence,
+        stats: if is_full { Some(stats) } else { None },
+    }
 }
 
 /// Detailed stack canary detection for arm64/arm64e.
