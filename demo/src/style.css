@@ -122,7 +122,6 @@ h1 {
 
 select,
 #choose-button,
-.tab,
 .slice-tab {
   min-height: 40px;
   border: 1px solid var(--line-strong);
@@ -230,27 +229,10 @@ select {
   min-height: 420px;
 }
 
-.tabs {
-  display: flex;
-  gap: 8px;
-  padding: 12px;
-  border-bottom: 1px solid var(--line);
-}
-
-.tab {
-  padding: 0 14px;
-  color: var(--muted);
-}
-
-.tab.active {
-  color: var(--panel);
-  background: var(--ink);
-}
-
 .results {
   display: grid;
   gap: 14px;
-  padding: 0 14px 14px;
+  padding: 14px;
 }
 
 .results.empty {
@@ -616,21 +598,6 @@ select {
 .function-chip {
   color: var(--pink);
   background: rgba(182, 61, 114, 0.12);
-}
-
-.json-output {
-  min-height: 360px;
-  margin: 0;
-  padding: 16px;
-  overflow: auto;
-  color: #1d2b20;
-  background: #fffaf0;
-  font-size: 12px;
-  line-height: 1.55;
-}
-
-.hidden {
-  display: none;
 }
 
 @media (max-width: 760px) {

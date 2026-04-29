@@ -2,7 +2,7 @@
 
 Small Rsbuild/Rspack demo for running the WASM analyzer in a browser. It accepts
 a Mach-O file via drag and drop or the file picker, then renders the check
-summary and raw JSON.
+summary.
 
 ## Prerequisites
 
