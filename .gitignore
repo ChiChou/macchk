@@ -27,3 +27,8 @@ Cargo.lock
 .env.local
 
 tests/fixtures/bin/
+
+# Browser demo
+demo/node_modules/
+demo/dist/
+demo/src/pkg/
