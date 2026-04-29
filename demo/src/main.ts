@@ -53,7 +53,6 @@ const dropzone = $("#dropzone");
 const fileInput = $("#file-input") as HTMLInputElement;
 const chooseButton = $("#choose-button") as HTMLButtonElement;
 const levelSelect = $("#level") as HTMLSelectElement;
-const archSelect = $("#arch") as HTMLSelectElement;
 const fileName = $("#file-name");
 const statusText = $("#status");
 const sliceCount = $("#slice-count");
@@ -333,7 +332,7 @@ async function analyzeFile(file: File) {
     await ensureWasm();
     const bytes = new Uint8Array(await file.arrayBuffer());
     const parsed = JSON.parse(
-      analyze(bytes, levelSelect.value, archSelect.value || undefined),
+      analyze(bytes, levelSelect.value),
     ) as AnalysisResult;
     activeSliceIndex = 0;
     renderSummary(parsed);
@@ -382,12 +381,6 @@ dropzone.addEventListener("keydown", (event) => {
 });
 
 levelSelect.addEventListener("change", () => {
-  if (activeFile) {
-    void analyzeFile(activeFile);
-  }
-});
-
-archSelect.addEventListener("change", () => {
   if (activeFile) {
     void analyzeFile(activeFile);
   }
