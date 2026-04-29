@@ -3,10 +3,10 @@
   --ink: #171717;
   --muted: #66645f;
   --faint: #8c8981;
-  --paper: #f3f0e8;
+  --paper: #f7f4ee;
   --panel: #fffdf7;
-  --line: #d7d0c2;
-  --line-strong: #b6ad9b;
+  --line: #e2dbcf;
+  --line-strong: #c7bcab;
   --good: #23684a;
   --good-soft: #dff3e7;
   --bad: #9d2c24;
@@ -20,7 +20,7 @@
   --blue: #276aa4;
   --pink: #b63d72;
   --olive: #6f7f22;
-  --shadow: 0 18px 60px rgba(40, 35, 27, 0.12);
+  --shadow: none;
   font-family:
     ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
 }
@@ -34,11 +34,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   color: var(--ink);
-  background:
-    linear-gradient(rgba(23, 23, 23, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(23, 23, 23, 0.035) 1px, transparent 1px),
-    var(--paper);
-  background-size: 28px 28px;
+  background: var(--paper);
 }
 
 button,
@@ -65,8 +61,8 @@ button {
 .dropzone,
 .summary-grid article,
 .results-shell {
-  border: 1px solid var(--line);
-  background: rgba(255, 253, 247, 0.92);
+  border: 0;
+  background: rgba(255, 253, 247, 0.72);
   box-shadow: var(--shadow);
 }
 
@@ -75,7 +71,8 @@ button {
   align-items: end;
   justify-content: space-between;
   gap: 20px;
-  padding: 18px;
+  padding: 18px 0 8px;
+  background: transparent;
 }
 
 .eyebrow {
@@ -124,10 +121,10 @@ select,
 #choose-button,
 .slice-tab {
   min-height: 40px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid rgba(199, 188, 171, 0.72);
   border-radius: 4px;
   color: var(--ink);
-  background: #fffaf0;
+  background: rgba(255, 253, 247, 0.9);
 }
 
 select {
@@ -143,19 +140,17 @@ select {
   min-height: 118px;
   padding: 18px;
   outline: none;
+  background: rgba(255, 253, 247, 0.64);
 }
 
 .dropzone::before {
-  content: "";
-  position: absolute;
-  inset: 8px;
-  border: 1px dashed var(--line-strong);
-  pointer-events: none;
+  display: none;
 }
 
 .dropzone.dragging,
 .dropzone:focus-visible {
-  border-color: var(--accent);
+  background: rgba(255, 253, 247, 0.9);
+  box-shadow: inset 0 0 0 2px rgba(201, 119, 26, 0.34);
 }
 
 #file-input {
@@ -194,6 +189,7 @@ select {
   gap: 10px;
   min-height: 84px;
   padding: 14px;
+  background: rgba(255, 253, 247, 0.6);
 }
 
 .summary-grid strong {
@@ -227,6 +223,7 @@ select {
 
 .results-shell {
   min-height: 420px;
+  background: rgba(255, 253, 247, 0.5);
 }
 
 .results {
@@ -255,10 +252,8 @@ select {
   min-height: 74px;
   padding: 10px 12px;
   text-align: left;
-  border-top: 4px solid transparent;
-  background:
-    linear-gradient(135deg, rgba(201, 119, 26, 0.1), transparent 62%),
-    #fffaf0;
+  border-color: transparent;
+  background: rgba(255, 253, 247, 0.72);
 }
 
 .slice-tab strong {
@@ -271,17 +266,16 @@ select {
 }
 
 .slice-tab.active {
-  border-color: var(--accent);
-  background:
-    linear-gradient(135deg, rgba(201, 119, 26, 0.2), rgba(35, 104, 74, 0.12)),
-    #fffdf7;
+  border-color: rgba(201, 119, 26, 0.28);
+  background: var(--panel);
+  box-shadow: inset 0 -3px 0 var(--accent);
 }
 
 .slice-score,
 .count-chip {
   inline-size: fit-content;
   padding: 4px 8px;
-  border: 1px solid currentColor;
+  border: 0;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 800;
@@ -313,9 +307,7 @@ select {
   gap: 12px;
   padding: 16px;
   color: var(--panel);
-  background:
-    linear-gradient(135deg, rgba(119, 83, 184, 0.9), rgba(31, 118, 109, 0.88)),
-    var(--ink);
+  background: #24221e;
 }
 
 .slice-banner strong {
@@ -344,9 +336,9 @@ select {
 .check-section {
   --section-color: var(--accent);
   --section-soft: rgba(201, 119, 26, 0.12);
-  border: 1px solid var(--line);
-  border-left: 5px solid var(--section-color);
-  background: rgba(255, 250, 240, 0.94);
+  border: 0;
+  border-left: 3px solid var(--section-color);
+  background: rgba(255, 253, 247, 0.62);
 }
 
 .category-header {
@@ -397,9 +389,7 @@ select {
   min-height: 64px;
   padding: 12px 46px 12px 14px;
   cursor: pointer;
-  background:
-    linear-gradient(90deg, var(--section-soft), transparent 62%),
-    #fffdf7;
+  background: transparent;
 }
 
 .section-summary::after {
@@ -438,7 +428,7 @@ select {
   display: grid;
   gap: 10px;
   padding: 12px;
-  border-top: 1px solid var(--line);
+  border-top: 0;
 }
 
 .check-card {
@@ -447,11 +437,9 @@ select {
   display: grid;
   gap: 10px;
   padding: 13px;
-  border: 1px solid rgba(182, 173, 155, 0.78);
-  border-left: 4px solid var(--status-color);
-  background:
-    linear-gradient(135deg, var(--status-bg), transparent 55%),
-    #fffaf0;
+  border: 0;
+  border-left: 3px solid var(--status-color);
+  background: rgba(255, 253, 247, 0.78);
 }
 
 .check-card.detected.positive {
@@ -513,8 +501,8 @@ select {
   gap: 4px;
   min-height: 62px;
   padding: 9px;
-  border: 1px solid rgba(182, 173, 155, 0.62);
-  background: rgba(255, 253, 247, 0.72);
+  border: 0;
+  background: rgba(247, 244, 238, 0.78);
 }
 
 .stat-tile strong {
@@ -533,8 +521,8 @@ select {
   gap: 10px;
   align-items: start;
   padding: 9px;
-  border: 1px solid rgba(182, 173, 155, 0.55);
-  background: rgba(255, 253, 247, 0.8);
+  border: 0;
+  background: rgba(247, 244, 238, 0.68);
 }
 
 .confidence-chip,
