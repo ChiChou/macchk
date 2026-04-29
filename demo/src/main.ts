@@ -60,15 +60,11 @@ const sliceCount = $("#slice-count");
 const detectedCount = $("#detected-count");
 const warningCount = $("#warning-count");
 const results = $("#results");
-const jsonOutput = $("#json-output");
-const resultsTab = $("#results-tab") as HTMLButtonElement;
-const jsonTab = $("#json-tab") as HTMLButtonElement;
 
 let wasmReady: Promise<void> | null = null;
 let activeFile: File | null = null;
 let activeSliceIndex = 0;
 let latestResult: AnalysisResult | null = null;
-let latestJson = "";
 
 function ensureWasm(): Promise<void> {
   wasmReady ??= init({ module_or_path: wasmUrl }).then(() => undefined);
@@ -336,31 +332,18 @@ async function analyzeFile(file: File) {
   try {
     await ensureWasm();
     const bytes = new Uint8Array(await file.arrayBuffer());
-    latestJson = analyze(bytes, levelSelect.value, archSelect.value || undefined);
-    const parsed = JSON.parse(latestJson) as AnalysisResult;
+    const parsed = JSON.parse(
+      analyze(bytes, levelSelect.value, archSelect.value || undefined),
+    ) as AnalysisResult;
     activeSliceIndex = 0;
     renderSummary(parsed);
     renderResults(parsed);
-    jsonOutput.textContent = JSON.stringify(parsed, null, 2);
     setStatus("Complete");
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    latestJson = "";
     latestResult = null;
-    jsonOutput.textContent = "";
     renderEmpty(message);
     setStatus("Failed");
-  }
-}
-
-function showTab(tab: "results" | "json") {
-  const showJson = tab === "json";
-  resultsTab.classList.toggle("active", !showJson);
-  jsonTab.classList.toggle("active", showJson);
-  results.classList.toggle("hidden", showJson);
-  jsonOutput.classList.toggle("hidden", !showJson);
-  if (showJson && !latestJson) {
-    jsonOutput.textContent = "";
   }
 }
 
@@ -409,9 +392,6 @@ archSelect.addEventListener("change", () => {
     void analyzeFile(activeFile);
   }
 });
-
-resultsTab.addEventListener("click", () => showTab("results"));
-jsonTab.addEventListener("click", () => showTab("json"));
 
 void ensureWasm()
   .then(() => setStatus("Waiting"))
