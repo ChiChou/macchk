@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>macchk demo</title>
+  </head>
+  <body>
+    <main id="app">
+      <section class="workbench">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">macchk</p>
+            <h1>Mach-O hardening scan</h1>
+          </div>
+          <div class="controls" aria-label="Analysis controls">
+            <label class="field">
+              <span>Level</span>
+              <select id="level">
+                <option value="standard" selected>Standard</option>
+                <option value="quick">Quick</option>
+                <option value="full">Full</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Arch</span>
+              <select id="arch">
+                <option value="" selected>All</option>
+                <option value="arm64e">arm64e</option>
+                <option value="arm64">arm64</option>
+                <option value="x86_64">x86_64</option>
+              </select>
+            </label>
+          </div>
+        </header>
+
+        <section id="dropzone" class="dropzone" tabindex="0">
+          <input id="file-input" type="file" aria-label="Choose Mach-O binary" />
+          <div class="drop-main">
+            <span class="drop-kicker">Drop binary</span>
+            <strong id="file-name">No file selected</strong>
+          </div>
+          <button id="choose-button" type="button">Choose File</button>
+        </section>
+
+        <section class="summary-grid" aria-label="Analysis summary">
+          <article>
+            <span>Status</span>
+            <strong id="status">Waiting</strong>
+          </article>
+          <article>
+            <span>Slices</span>
+            <strong id="slice-count">0</strong>
+          </article>
+          <article>
+            <span>Detected</span>
+            <strong id="detected-count">0</strong>
+          </article>
+          <article>
+            <span>Warnings</span>
+            <strong id="warning-count">0</strong>
+          </article>
+        </section>
+
+        <section class="results-shell">
+          <div class="tabs" role="tablist" aria-label="Result views">
+            <button class="tab active" id="results-tab" type="button">Results</button>
+            <button class="tab" id="json-tab" type="button">JSON</button>
+          </div>
+          <div id="results" class="results empty">Analysis results will appear here.</div>
+          <pre id="json-output" class="json-output hidden" aria-label="JSON output"></pre>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

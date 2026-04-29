@@ -1,0 +1,17 @@
+{
+  "name": "macchk-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:wasm": "cd .. && PATH=$(dirname $(rustup which rustc)):$PATH cargo build --release --target wasm32-unknown-unknown --features wasm --lib && wasm-bindgen target/wasm32-unknown-unknown/release/macchk.wasm --target web --out-dir demo/src/pkg --out-name macchk",
+    "typecheck": "tsgo --noEmit -p tsconfig.json",
+    "dev": "npm run build:wasm && rsbuild dev --host 127.0.0.1",
+    "build": "npm run build:wasm && npm run typecheck && rsbuild build",
+    "preview": "rsbuild preview --host 127.0.0.1"
+  },
+  "devDependencies": {
+    "@rsbuild/core": "^1.7.5",
+    "@typescript/native-preview": "7.0.0-dev.20260429.1"
+  }
+}
