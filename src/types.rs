@@ -129,6 +129,7 @@ pub enum CheckId {
     BoundsSafety,
     MteInstructions,
     StackCanaryInsn,
+    TypedAllocatorsInsn,
     JumpTableHardening,
 }
 

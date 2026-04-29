@@ -162,6 +162,7 @@ fn all_checks() -> Vec<Box<dyn Check>> {
         Box::new(instructions::BoundsSafetyCheck),
         Box::new(instructions::MteInstructionsCheck),
         Box::new(instructions::StackCanaryInsnCheck),
+        Box::new(instructions::TypedAllocatorsInsnCheck),
         Box::new(instructions::JumpTableHardeningCheck),
     ]
 }
