@@ -1,19 +1,24 @@
 use anyhow::{Context, Result};
 use goblin::mach::{Mach, MachO, SingleArch};
+#[cfg(not(target_arch = "wasm32"))]
 use memmap2::Mmap;
+#[cfg(not(target_arch = "wasm32"))]
 use std::fs::File;
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::Path;
 
 use crate::detection::{analyze_slice, AnalysisContext};
 use crate::types::{AnalysisResult, DetectionLevel, SliceResult};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Memory-mapped file handle — keeps the mapping alive while we parse.
 pub struct MappedBinary {
     pub mmap: Mmap,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl MappedBinary {
-    pub fn open(path: &Path) -> Result<Self> {
+    pub fn open(path: &std::path::Path) -> Result<Self> {
         let file = File::open(path).with_context(|| format!("opening {}", path.display()))?;
         let mmap = unsafe { Mmap::map(&file) }
             .with_context(|| format!("memory-mapping {}", path.display()))?;
@@ -63,17 +68,24 @@ fn analyze_one_slice(macho: &MachO, raw: &[u8], level: DetectionLevel) -> Result
     })
 }
 
-pub fn analyze_binary(
-    path: &Path,
+#[cfg(not(target_arch = "wasm32"))]
+fn maybe_warn(enabled: bool, message: String) {
+    if enabled {
+        eprintln!("warning: {}", message);
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn maybe_warn(_enabled: bool, _message: String) {}
+
+fn analyze_binary_inner(
+    name: &str,
     data: &[u8],
     level: DetectionLevel,
     arch_filter: Option<&str>,
+    warn: bool,
 ) -> Result<AnalysisResult> {
-    // goblin handles both little-endian (MH_MAGIC_64: 0xfeedfacf) and
-    // big-endian (MH_CIGAM_64: 0xcffaedfe) Mach-O, as well as fat/universal
-    // binaries (always big-endian header: 0xcafebabe / 0xbebafeca).
-    let parsed =
-        Mach::parse(data).with_context(|| format!("parsing Mach-O: {}", path.display()))?;
+    let parsed = Mach::parse(data).with_context(|| format!("parsing Mach-O: {}", name))?;
 
     let slices = match parsed {
         Mach::Binary(macho) => {
@@ -81,7 +93,7 @@ pub fn analyze_binary(
             if let Some(filter) = arch_filter {
                 if arch != filter {
                     return Ok(AnalysisResult {
-                        path: path.display().to_string(),
+                        path: name.to_string(),
                         slices: vec![],
                     });
                 }
@@ -99,7 +111,6 @@ pub fn analyze_binary(
                                 continue;
                             }
                         }
-                        // For fat binaries, get the slice bytes
                         let arch_entry = fat.iter_arches().nth(i).and_then(|r| r.ok());
                         let slice_data = if let Some(entry) = arch_entry {
                             &data[entry.offset as usize..(entry.offset + entry.size) as usize]
@@ -108,15 +119,11 @@ pub fn analyze_binary(
                         };
                         match analyze_one_slice(&macho, slice_data, level) {
                             Ok(s) => slices.push(s),
-                            Err(e) => eprintln!("warning: {}: {}", arch, e),
+                            Err(e) => maybe_warn(warn, format!("{}: {}", arch, e)),
                         }
                     }
-                    Ok(SingleArch::Archive(_)) => {
-                        // Skip archive slices in fat binaries
-                    }
-                    Err(e) => {
-                        eprintln!("warning: failed to parse fat arch {}: {}", i, e);
-                    }
+                    Ok(SingleArch::Archive(_)) => {}
+                    Err(e) => maybe_warn(warn, format!("failed to parse fat arch {}: {}", i, e)),
                 }
             }
             slices
@@ -124,7 +131,26 @@ pub fn analyze_binary(
     };
 
     Ok(AnalysisResult {
-        path: path.display().to_string(),
+        path: name.to_string(),
         slices,
     })
+}
+
+pub fn analyze_binary_buf(
+    name: &str,
+    data: &[u8],
+    level: DetectionLevel,
+    arch_filter: Option<&str>,
+) -> Result<AnalysisResult> {
+    analyze_binary_inner(name, data, level, arch_filter, false)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn analyze_binary(
+    path: &Path,
+    data: &[u8],
+    level: DetectionLevel,
+    arch_filter: Option<&str>,
+) -> Result<AnalysisResult> {
+    analyze_binary_inner(&path.display().to_string(), data, level, arch_filter, true)
 }
