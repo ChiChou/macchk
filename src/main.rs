@@ -1,12 +1,19 @@
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
+#[cfg(not(target_arch = "wasm32"))]
 use std::process;
 
+#[cfg(not(target_arch = "wasm32"))]
 use clap::Parser;
 
+#[cfg(not(target_arch = "wasm32"))]
 use macchk::binary::{analyze_binary, MappedBinary};
+#[cfg(not(target_arch = "wasm32"))]
 use macchk::output::{self, OutputFormat};
+#[cfg(not(target_arch = "wasm32"))]
 use macchk::types::DetectionLevel;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Parser)]
 #[command(
     name = "macchk",
@@ -35,6 +42,7 @@ struct Cli {
     arch: Option<String>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let cli = Cli::parse();
 
@@ -43,7 +51,10 @@ fn main() {
         "standard" | "s" => DetectionLevel::Standard,
         "full" | "f" => DetectionLevel::Full,
         other => {
-            eprintln!("error: unknown detection level '{}' (use quick, standard, or full)", other);
+            eprintln!(
+                "error: unknown detection level '{}' (use quick, standard, or full)",
+                other
+            );
             process::exit(1);
         }
     };
@@ -83,3 +94,6 @@ fn main() {
         process::exit(1);
     }
 }
+
+#[cfg(target_arch = "wasm32")]
+fn main() {}

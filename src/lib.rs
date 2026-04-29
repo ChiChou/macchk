@@ -3,5 +3,8 @@ pub mod codesign_parser;
 pub mod constraint_parser;
 pub mod detection;
 pub mod entitlements_db;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod output;
 pub mod types;
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;
