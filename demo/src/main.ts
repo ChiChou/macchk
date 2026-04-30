@@ -52,7 +52,7 @@ const $ = <T extends HTMLElement>(selector: string): T => {
 const dropzone = $("#dropzone");
 const fileInput = $("#file-input") as HTMLInputElement;
 const chooseButton = $("#choose-button") as HTMLButtonElement;
-const levelSelect = $("#level") as HTMLSelectElement;
+const levelControl = $("#level-control") as HTMLFieldSetElement;
 const fileName = $("#file-name");
 const statusText = $("#status");
 const sliceCount = $("#slice-count");
@@ -73,6 +73,15 @@ function ensureWasm(): Promise<void> {
 function setStatus(text: string, busy = false) {
   statusText.textContent = text;
   document.body.classList.toggle("busy", busy);
+}
+
+function selectedLevel(): string {
+  const input = document.querySelector<HTMLInputElement>("input[name='level']:checked");
+  return input?.value ?? "standard";
+}
+
+function setReportMode(hasReport: boolean) {
+  document.body.classList.toggle("empty-state", !hasReport);
 }
 
 function formatCategory(category: string): string {
@@ -97,6 +106,10 @@ function formatCategory(category: string): string {
 
 function categoryClass(category: string): string {
   return `category-${category.replace(/_/g, "-")}`;
+}
+
+function categoryAnchor(category: string): string {
+  return `checks-${category.replace(/_/g, "-")}`;
 }
 
 function statusLabel(check: CheckResult): string {
@@ -195,6 +208,7 @@ function renderCheck(check: CheckResult): HTMLElement {
 function renderCategory(category: string, checks: CheckResult[]): HTMLElement {
   const section = document.createElement("details");
   section.className = `check-section ${categoryClass(category)}`;
+  section.id = categoryAnchor(category);
   section.open = category === "header" || category === "load_commands";
 
   const detected = checks.filter((check) => check.detected).length;
@@ -223,69 +237,121 @@ function renderCategory(category: string, checks: CheckResult[]): HTMLElement {
   return section;
 }
 
-function renderSliceTabs(result: AnalysisResult): HTMLElement {
-  const tabs = document.createElement("div");
-  tabs.className = "slice-tabs";
-  tabs.setAttribute("role", "tablist");
-  tabs.setAttribute("aria-label", "Architecture slices");
+function renderCategoryNav(entries: [string, CheckResult[]][], categories: HTMLElement): HTMLElement {
+  const nav = document.createElement("nav");
+  nav.className = "category-nav";
+  nav.setAttribute("aria-label", "Check sections");
 
-  tabs.replaceChildren(
-    ...result.slices.map((slice, index) => {
+  nav.replaceChildren(
+    ...entries.map(([category, checks]) => {
       const button = document.createElement("button");
-      const detected = slice.checks.filter((check) => check.detected).length;
+      const detected = checks.filter((check) => check.detected).length;
+      const anchor = categoryAnchor(category);
       button.type = "button";
-      button.className = `slice-tab ${index === activeSliceIndex ? "active" : ""}`;
-      button.setAttribute("role", "tab");
-      button.setAttribute("aria-selected", String(index === activeSliceIndex));
+      button.className = `category-nav-button ${categoryClass(category)}`;
+      button.setAttribute("aria-controls", anchor);
       button.append(
-        textElement("strong", slice.arch),
-        textElement("span", slice.file_type),
-        chip(`${detected}/${slice.checks.length}`, "slice-score"),
+        textElement("strong", formatCategory(category)),
+        chip(`${detected}/${checks.length}`, "category-nav-count"),
       );
       button.addEventListener("click", () => {
-        activeSliceIndex = index;
-        if (latestResult) {
-          renderResults(latestResult);
+        const section = categories.querySelector<HTMLDetailsElement>(`#${anchor}`);
+        if (!section) {
+          return;
         }
+        section.open = true;
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
       });
       return button;
     }),
   );
 
-  return tabs;
+  return nav;
 }
 
-function renderSlicePanel(slice: SliceResult): HTMLElement {
+function renderSliceSelect(result: AnalysisResult): HTMLLabelElement {
+  const field = document.createElement("label");
+  field.className = "slice-select-field";
+  field.append(textElement("span", result.slices[activeSliceIndex].file_type));
+
+  const select = document.createElement("select");
+  select.className = "slice-select";
+  select.setAttribute("aria-label", "Architecture slice");
+  select.replaceChildren(
+    ...result.slices.map((slice, index) => {
+      const option = document.createElement("option");
+      const detected = slice.checks.filter((check) => check.detected).length;
+      option.value = String(index);
+      option.selected = index === activeSliceIndex;
+      option.textContent = `${slice.arch} (${detected}/${slice.checks.length})`;
+      return option;
+    }),
+  );
+  select.addEventListener("change", () => {
+    activeSliceIndex = Number(select.value);
+    renderResults(result);
+  });
+
+  field.append(select);
+  return field;
+}
+
+function renderSlicePanel(result: AnalysisResult): HTMLElement {
+  const slice = result.slices[activeSliceIndex];
   const panel = document.createElement("section");
   panel.className = "slice-panel";
-  panel.setAttribute("role", "tabpanel");
 
   const detected = slice.checks.filter((check) => check.detected).length;
   const warnings = slice.checks.filter((check) => check.detected && check.polarity === "negative").length;
 
   const banner = document.createElement("header");
   banner.className = "slice-banner";
-  const bannerText = document.createElement("div");
-  bannerText.append(textElement("span", slice.file_type), textElement("strong", slice.arch));
   const bannerStats = document.createElement("div");
   bannerStats.className = "slice-banner-stats";
-  bannerStats.append(chip(`${detected} detected`, "count-chip detected-count"));
-  bannerStats.append(chip(`${warnings} warnings`, "count-chip warning-count"));
-  banner.append(bannerText, bannerStats);
-
+  const bannerActions = document.createElement("div");
+  bannerActions.className = "slice-banner-actions";
   const groups = slice.checks.reduce<Record<string, CheckResult[]>>((acc, check) => {
     acc[check.category] ??= [];
     acc[check.category].push(check);
     return acc;
   }, {});
 
+  const categoryEntries = Object.entries(groups);
   const categories = document.createElement("div");
   categories.className = "category-stack";
   categories.replaceChildren(
-    ...Object.entries(groups).map(([category, checks]) => renderCategory(category, checks)),
+    ...categoryEntries.map(([category, checks]) => renderCategory(category, checks)),
   );
 
-  panel.append(banner, categories);
+  const expandButton = document.createElement("button");
+  expandButton.type = "button";
+  expandButton.className = "section-tool-button";
+  expandButton.textContent = "Expand all";
+  const collapseButton = document.createElement("button");
+  collapseButton.type = "button";
+  collapseButton.className = "section-tool-button";
+  collapseButton.textContent = "Collapse all";
+
+  expandButton.addEventListener("click", () => {
+    categories.querySelectorAll<HTMLDetailsElement>("details.check-section").forEach((section) => {
+      section.open = true;
+    });
+  });
+
+  collapseButton.addEventListener("click", () => {
+    categories.querySelectorAll<HTMLDetailsElement>("details.check-section").forEach((section) => {
+      section.open = false;
+    });
+  });
+
+  bannerStats.append(
+    chip(`${detected} detected`, "count-chip detected-count"),
+    chip(`${warnings} warnings`, "count-chip warning-count"),
+  );
+  bannerActions.append(expandButton, collapseButton);
+  banner.append(renderSliceSelect(result), bannerStats, bannerActions);
+
+  panel.append(banner, renderCategoryNav(categoryEntries, categories), categories);
   return panel;
 }
 
@@ -309,10 +375,12 @@ function renderEmpty(message: string) {
   sliceCount.textContent = "0";
   detectedCount.textContent = "0";
   warningCount.textContent = "0";
+  setReportMode(Boolean(activeFile));
 }
 
 function renderResults(result: AnalysisResult) {
   latestResult = result;
+  setReportMode(true);
   if (result.slices.length === 0) {
     renderEmpty("No matching architecture found.");
     return;
@@ -320,19 +388,20 @@ function renderResults(result: AnalysisResult) {
 
   activeSliceIndex = Math.min(activeSliceIndex, result.slices.length - 1);
   results.className = "results";
-  results.replaceChildren(renderSliceTabs(result), renderSlicePanel(result.slices[activeSliceIndex]));
+  results.replaceChildren(renderSlicePanel(result));
 }
 
 async function analyzeFile(file: File) {
   activeFile = file;
   fileName.textContent = file.name;
+  setReportMode(true);
   setStatus("Scanning", true);
 
   try {
     await ensureWasm();
     const bytes = new Uint8Array(await file.arrayBuffer());
     const parsed = JSON.parse(
-      analyze(bytes, levelSelect.value),
+      analyze(bytes, selectedLevel()),
     ) as AnalysisResult;
     activeSliceIndex = 0;
     renderSummary(parsed);
@@ -347,6 +416,13 @@ async function analyzeFile(file: File) {
 }
 
 chooseButton.addEventListener("click", () => fileInput.click());
+
+dropzone.addEventListener("click", (event) => {
+  if ((event.target as HTMLElement).closest("button")) {
+    return;
+  }
+  fileInput.click();
+});
 
 fileInput.addEventListener("change", () => {
   const [file] = Array.from(fileInput.files ?? []);
@@ -380,7 +456,10 @@ dropzone.addEventListener("keydown", (event) => {
   }
 });
 
-levelSelect.addEventListener("change", () => {
+levelControl.addEventListener("change", (event) => {
+  if (!(event.target instanceof HTMLInputElement) || event.target.name !== "level") {
+    return;
+  }
   if (activeFile) {
     void analyzeFile(activeFile);
   }
