@@ -5,55 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>macchk demo</title>
   </head>
-  <body>
+  <body class="empty-state">
     <main id="app">
-      <section class="workbench">
-        <header class="topbar">
-          <div>
-            <p class="eyebrow">macchk</p>
-            <h1>Mach-O hardening scan</h1>
-          </div>
-          <div class="controls" aria-label="Analysis controls">
-            <label class="field">
-              <span>Level</span>
-              <select id="level">
-                <option value="standard" selected>Standard</option>
-                <option value="quick">Quick</option>
-                <option value="full">Full</option>
-              </select>
-            </label>
-          </div>
-        </header>
+      <section class="workflow-board">
+        <section class="board-column input-column" aria-label="Input">
+          <section id="dropzone" class="dropzone" tabindex="0">
+            <input id="file-input" type="file" aria-label="Choose Mach-O binary" />
+            <div class="drop-main">
+              <span class="drop-kicker">macchk demo</span>
+              <strong id="file-name">Drop a Mach-O binary</strong>
+            </div>
+            <button id="choose-button" type="button">Upload File</button>
+          </section>
 
-        <section id="dropzone" class="dropzone" tabindex="0">
-          <input id="file-input" type="file" aria-label="Choose Mach-O binary" />
-          <div class="drop-main">
-            <span class="drop-kicker">Drop binary</span>
-            <strong id="file-name">No file selected</strong>
+          <div class="scan-toolbar" aria-label="Analysis controls">
+            <fieldset id="level-control" class="level-control">
+              <legend>Level</legend>
+              <label>
+                <input type="radio" name="level" value="standard" checked />
+                <span>Standard</span>
+              </label>
+              <label>
+                <input type="radio" name="level" value="quick" />
+                <span>Quick</span>
+              </label>
+              <label>
+                <input type="radio" name="level" value="full" />
+                <span>Full</span>
+              </label>
+            </fieldset>
           </div>
-          <button id="choose-button" type="button">Choose File</button>
+
+          <span id="status" class="sr-only" aria-live="polite">Waiting</span>
+          <section class="summary-grid" aria-label="Analysis summary">
+            <article>
+              <span>Slices</span>
+              <strong id="slice-count">0</strong>
+            </article>
+            <article>
+              <span>Detected</span>
+              <strong id="detected-count">0</strong>
+            </article>
+            <article>
+              <span>Warnings</span>
+              <strong id="warning-count">0</strong>
+            </article>
+          </section>
         </section>
 
-        <section class="summary-grid" aria-label="Analysis summary">
-          <article>
-            <span>Status</span>
-            <strong id="status">Waiting</strong>
-          </article>
-          <article>
-            <span>Slices</span>
-            <strong id="slice-count">0</strong>
-          </article>
-          <article>
-            <span>Detected</span>
-            <strong id="detected-count">0</strong>
-          </article>
-          <article>
-            <span>Warnings</span>
-            <strong id="warning-count">0</strong>
-          </article>
-        </section>
-
-        <section class="results-shell">
+        <section class="board-column findings-column" aria-label="Checks">
           <div id="results" class="results empty">Analysis results will appear here.</div>
         </section>
       </section>
