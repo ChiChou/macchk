@@ -129,7 +129,9 @@ pub fn parse_codesign(macho: &MachO, raw_bytes: &[u8]) -> Result<Option<CodeSign
         let blob_offset: u32 = cs_data.pread_with(idx_offset + 4, BE)?;
         let blob_off = blob_offset as usize;
 
-        if blob_off + 8 > cs_data.len() { continue; }
+        if blob_off + 8 > cs_data.len() {
+            continue;
+        }
         let blob_magic: u32 = cs_data.pread_with(blob_off, BE)?;
         let blob_length: u32 = cs_data.pread_with(blob_off + 4, BE)?;
 
@@ -232,7 +234,11 @@ pub fn parse_codesign(macho: &MachO, raw_bytes: &[u8]) -> Result<Option<CodeSign
         let team_offset: u32 = cd.pread_with(48, BE)?;
         if team_offset > 0 && (team_offset as usize) < cd.len() {
             let start = team_offset as usize;
-            let end = cd[start..].iter().position(|&b| b == 0).map(|p| start + p).unwrap_or(cd.len());
+            let end = cd[start..]
+                .iter()
+                .position(|&b| b == 0)
+                .map(|p| start + p)
+                .unwrap_or(cd.len());
             Some(String::from_utf8_lossy(&cd[start..end]).to_string())
         } else {
             None
@@ -244,7 +250,11 @@ pub fn parse_codesign(macho: &MachO, raw_bytes: &[u8]) -> Result<Option<CodeSign
     // Extract runtime version (if version >= 0x20500)
     let runtime_version = if version >= CS_SUPPORTSRUNTIME && cd.len() > 80 {
         let rv: u32 = cd.pread_with(76, BE)?;
-        if rv > 0 { Some(rv) } else { None }
+        if rv > 0 {
+            Some(rv)
+        } else {
+            None
+        }
     } else {
         None
     };

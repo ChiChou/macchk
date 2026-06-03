@@ -1,6 +1,6 @@
-pub mod table;
-pub mod json;
 pub mod brief;
+pub mod json;
+pub mod table;
 
 use crate::types::AnalysisResult;
 

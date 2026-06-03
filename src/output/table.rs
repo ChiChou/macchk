@@ -14,9 +14,10 @@ pub fn print(result: &AnalysisResult) {
     for slice in &result.slices {
         println!(
             "{}",
-            format!("  {} ({})", slice.arch, slice.file_type).cyan().bold()
+            format!("  {} ({})", slice.arch, slice.file_type)
+                .cyan()
+                .bold()
         );
-
 
         let mut current_cat: Option<Category> = None;
 
@@ -87,13 +88,11 @@ pub fn print(result: &AnalysisResult) {
             println!();
             println!(
                 "    {}",
-                "note: x86_64 instruction analysis requires the 'x86_64' feature"
-                    .yellow()
+                "note: x86_64 instruction analysis requires the 'x86_64' feature".yellow()
             );
             println!(
                 "    {}",
-                "      rebuild with: cargo install macchk --features x86_64"
-                    .yellow()
+                "      rebuild with: cargo install macchk --features x86_64".yellow()
             );
         }
 
@@ -137,7 +136,9 @@ fn print_truncated(text: &str, indent: &str, max_width: usize) {
         let mut in_esc = false;
         for c in text.chars() {
             if in_esc {
-                if c.is_ascii_alphabetic() { in_esc = false; }
+                if c.is_ascii_alphabetic() {
+                    in_esc = false;
+                }
             } else if c == '\x1b' {
                 in_esc = true;
             } else {
