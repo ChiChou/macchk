@@ -163,7 +163,7 @@ fn format_status(check: &CheckResult) -> ColoredString {
         (true, Polarity::Negative) => "DETECTED".red().bold(),
         (true, Polarity::Info) => "PRESENT".cyan(),
         (false, Polarity::Positive) => "not detected".red(),
-        (false, Polarity::Negative) => "not detected".green(),
+        (false, Polarity::Negative) => "absent".green(),
         (false, Polarity::Info) => "not present".dimmed(),
     }
 }

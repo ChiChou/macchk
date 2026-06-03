@@ -1,4 +1,5 @@
-use serde::Serialize;
+use serde::ser::SerializeStruct;
+use serde::{Serialize, Serializer};
 
 /// User-selected analysis depth.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize)]
@@ -61,6 +62,15 @@ pub enum Polarity {
     Negative,
     /// Informational, not inherently good or bad.
     Info,
+}
+
+/// Security interpretation of a check result.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CheckStatus {
+    Pass,
+    Fail,
+    Informational,
 }
 
 /// One piece of evidence for a security feature.
@@ -134,7 +144,7 @@ pub enum CheckId {
 }
 
 /// Result for a single security check.
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub struct CheckResult {
     pub id: CheckId,
     pub name: String,
@@ -142,8 +152,38 @@ pub struct CheckResult {
     pub polarity: Polarity,
     pub detected: bool,
     pub evidence: Vec<Evidence>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub stats: Option<CoverageStats>,
+}
+
+impl CheckResult {
+    pub fn status(&self) -> CheckStatus {
+        match (self.detected, self.polarity) {
+            (true, Polarity::Positive) | (false, Polarity::Negative) => CheckStatus::Pass,
+            (false, Polarity::Positive) | (true, Polarity::Negative) => CheckStatus::Fail,
+            (_, Polarity::Info) => CheckStatus::Informational,
+        }
+    }
+}
+
+impl Serialize for CheckResult {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let field_count = if self.stats.is_some() { 8 } else { 7 };
+        let mut state = serializer.serialize_struct("CheckResult", field_count)?;
+        state.serialize_field("id", &self.id)?;
+        state.serialize_field("name", &self.name)?;
+        state.serialize_field("category", &self.category)?;
+        state.serialize_field("polarity", &self.polarity)?;
+        state.serialize_field("detected", &self.detected)?;
+        state.serialize_field("status", &self.status())?;
+        state.serialize_field("evidence", &self.evidence)?;
+        if let Some(stats) = &self.stats {
+            state.serialize_field("stats", stats)?;
+        }
+        state.end()
+    }
 }
 
 /// Complete analysis result for one architecture slice.
@@ -159,4 +199,47 @@ pub struct SliceResult {
 pub struct AnalysisResult {
     pub path: String,
     pub slices: Vec<SliceResult>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn check_result(detected: bool, polarity: Polarity) -> CheckResult {
+        CheckResult {
+            id: CheckId::AllowStackExec,
+            name: "Executable Stack".into(),
+            category: Category::Header,
+            polarity,
+            detected,
+            evidence: Vec::new(),
+            stats: None,
+        }
+    }
+
+    #[test]
+    fn absent_negative_check_passes() {
+        assert_eq!(
+            check_result(false, Polarity::Negative).status(),
+            CheckStatus::Pass
+        );
+    }
+
+    #[test]
+    fn present_negative_check_fails() {
+        assert_eq!(
+            check_result(true, Polarity::Negative).status(),
+            CheckStatus::Fail
+        );
+    }
+
+    #[test]
+    fn serialized_absent_negative_check_reports_pass_status() {
+        let value = serde_json::to_value(check_result(false, Polarity::Negative)).unwrap();
+
+        assert_eq!(value["id"], "allow_stack_exec");
+        assert_eq!(value["detected"], false);
+        assert_eq!(value["status"], "pass");
+        assert!(value.get("stats").is_none());
+    }
 }
