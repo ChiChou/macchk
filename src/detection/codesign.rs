@@ -1,5 +1,6 @@
 use crate::codesign_parser::*;
 use crate::detection::{AnalysisContext, Check};
+use crate::entitlements_db::{self, Impact, ValueRule};
 use crate::types::*;
 
 fn cs_flag_check(
@@ -459,8 +460,6 @@ impl Check for EntitlementsCheck {
         Polarity::Info
     }
     fn run(&self, ctx: &AnalysisContext) -> CheckResult {
-        use crate::entitlements_db::{self, Impact};
-
         let cs = ctx.codesign_data();
         let xml = cs.as_ref().and_then(|i| i.entitlements_xml.as_ref());
         let mut evidence = Vec::new();
@@ -472,14 +471,15 @@ impl Check for EntitlementsCheck {
 
                 // First pass: emit known security-relevant entitlements
                 for key in dict.keys() {
-                    if let Some((impact, desc)) = entitlements_db::classify(key) {
+                    let raw_value = dict.get(key);
+                    if let Some((impact, desc)) = classify_entitlement_value(key, raw_value) {
                         known_count += 1;
                         let tag = match impact {
                             Impact::Weakens => " [WEAKENS]",
                             Impact::Strengthens => " [STRENGTHENS]",
                             Impact::Info => "",
                         };
-                        let val = format_plist_value(dict.get(key));
+                        let val = format_plist_value(raw_value);
                         evidence.push(Evidence {
                             strategy: "entitlement".into(),
                             description: format!("{} = {} — {}{}", key, val, desc, tag),
@@ -528,6 +528,18 @@ impl Check for EntitlementsCheck {
     }
 }
 
+fn classify_entitlement_value(key: &str, value: Option<&plist::Value>) -> Option<(Impact, String)> {
+    let (impact, desc, value_rule) = entitlements_db::classify(key)?;
+    if value_rule == ValueRule::BooleanTrue && matches!(value, Some(plist::Value::Boolean(false))) {
+        Some((
+            Impact::Info,
+            "disabled; no active entitlement effect".into(),
+        ))
+    } else {
+        Some((impact, desc.into()))
+    }
+}
+
 fn format_plist_value(val: Option<&plist::Value>) -> String {
     val.map(|v| match v {
         plist::Value::Boolean(b) => b.to_string(),
@@ -551,4 +563,42 @@ fn format_plist_value(val: Option<&plist::Value>) -> String {
         _ => format!("{:?}", v),
     })
     .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn true_boolean_entitlement_keeps_security_impact() {
+        let value = plist::Value::Boolean(true);
+        let (impact, desc) =
+            classify_entitlement_value("com.apple.security.app-sandbox", Some(&value)).unwrap();
+
+        assert_eq!(impact, Impact::Strengthens);
+        assert!(desc.contains("App Sandbox enabled"));
+    }
+
+    #[test]
+    fn false_boolean_entitlement_is_informational() {
+        let value = plist::Value::Boolean(false);
+        let (impact, desc) =
+            classify_entitlement_value("com.apple.security.app-sandbox", Some(&value)).unwrap();
+
+        assert_eq!(impact, Impact::Info);
+        assert_eq!(desc, "disabled; no active entitlement effect");
+    }
+
+    #[test]
+    fn presence_entitlement_keeps_security_impact_even_with_false_value() {
+        let value = plist::Value::Boolean(false);
+        let (impact, desc) = classify_entitlement_value(
+            "com.apple.security.temporary-exception.audio-unit-host",
+            Some(&value),
+        )
+        .unwrap();
+
+        assert_eq!(impact, Impact::Weakens);
+        assert!(desc.contains("sandbox exception"));
+    }
 }

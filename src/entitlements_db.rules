@@ -1,0 +1,229 @@
+# Security-relevant macOS/iOS entitlement rules.
+#
+# Section format: [category impact rule]
+# rule: bool = active only when the plist value is true; exists = presence-based.
+# Entry format: entitlement.key = short description
+
+[enhanced_security strengthens bool]
+com.apple.security.hardened-process = enables hardened process mode
+com.apple.developer.hardened-process = enables hardened process mode (developer variant)
+com.apple.security.hardened-process.hardened-heap = type-aware hardened heap allocator with integrity checks (OS_SECURITY_CONFIG_HARDENED_HEAP)
+com.apple.developer.hardened-process.hardened-heap = type-aware hardened heap allocator (developer variant)
+com.apple.security.hardened-process.dyld-ro = read-only dyld memory via TPRO, prevents runtime tampering (OS_SECURITY_CONFIG_TPRO)
+com.apple.security.hardened-process.checked-allocations = enables hardware memory tagging (MTE) for heap allocations
+com.apple.security.hardened-process.checked-allocations.soft-mode = MTE soft mode — simulated crashes on tag mismatches instead of terminating
+com.apple.security.hardened-process.checked-allocations.enable-pure-data = extends MTE tagging to memory containing only data (no pointers)
+com.apple.security.hardened-process.checked-allocations.no-tagged-receive = prevents receiving tagged memory from other processes via IPC
+com.apple.security.hardened-process.containment.ipc = IPC containment, undocumented, details unknown
+com.apple.security.script-restrictions = restricts loading of executable scripts (OS_SECURITY_CONFIG_SCRIPT_RESTRICTIONS)
+com.apple.security.app-protection = enables app protection
+
+[enhanced_security strengthens exists]
+com.apple.security.hardened-process.platform-restrictions = platform restrictions on IPC and port access
+com.apple.security.hardened-process.enhanced-security-version = enhanced security version for progressive hardening
+com.apple.security.hardened-process.enhanced-security-version-string = enhanced security version (deprecated string variant)
+com.apple.security.hardened-process.platform-restrictions-string = platform restrictions (deprecated string variant)
+
+[enhanced_security info bool]
+com.apple.security.hardened-process.no-guard-objects = opts out of guard-object heap hardening — clears OS_SECURITY_CONFIG_GUARD_OBJECTS, which is otherwise on by default at hardened level >= 2 / DriverKit
+
+[sandbox strengthens bool]
+com.apple.security.app-sandbox = App Sandbox enabled — restricts filesystem, network, and IPC
+
+[pac strengthens bool]
+com.apple.private.pac.exception = enforces fatal PAC exceptions and signed user state
+
+[pac strengthens exists]
+com.apple.pac.shared_region_id = per-group JOP key diversification — isolates PAC-signed shared cache pointers between processes
+
+[exceptions strengthens exists]
+com.apple.security.fatal-exceptions = makes specified exceptions fatal (SIGKILL instead of SIGSEGV)
+
+[exceptions strengthens bool]
+com.apple.security.only-one-exception-port = restricts to single exception port per task
+
+[cs_exception weakens bool]
+com.apple.security.cs.disable-library-validation = disables library validation — allows loading unsigned dylibs
+com.apple.security.cs.allow-jit = allows MAP_JIT for JIT compilation
+com.apple.security.cs.single-jit = allows single JIT code region
+com.apple.security.cs.allow-unsigned-executable-memory = allows unsigned W+X memory pages
+com.apple.security.cs.allow-dyld-environment-variables = allows DYLD_* environment variables — library path injection vector
+com.apple.security.cs.allow-relative-library-loads = allows relative @loader_path/@executable_path dylib loads — dylib hijack vector
+com.apple.security.cs.disable-executable-page-protection = disables W^X page protection
+com.apple.security.cs.jit-write-allowlist = enables JIT callback allowlists via pthread_jit_write_with_callback_np
+com.apple.security.cs.jit-write-allowlist-freeze-late = allows late-freezing of JIT callback allowlists for dynamic libraries
+dynamic-codesigning = allows dynamic code signing at runtime
+com.apple.security.cs.allow-in-chroot = allows code-signed binary execution inside a chroot environment
+com.apple.private.oop-jit.runner = OOP-JIT runner — may map unsigned JIT code from a paired loader
+com.apple.developer.cs.allow-jit = allows MAP_JIT for JIT compilation (developer variant)
+com.apple.developer.swift-playgrounds-app.development-build = Swift Playgrounds development build — allows OOP-JIT previews
+
+[debugging weakens bool]
+com.apple.security.get-task-allow = makes process debuggable via task_for_pid
+get-task-allow = makes process debuggable via task_for_pid
+
+[library_validation weakens bool]
+com.apple.private.security.clear-library-validation = clears library validation at runtime via CS_OPS_CLEAR_LV
+com.apple.private.cs.automator-plugins = disables library validation for automator plugin hosting
+
+[amfi info bool]
+com.apple.private.amfi.can-allow-non-platform = can toggle system-wide allow-only-platform-code policy via AMFI sysctl
+com.apple.private.amfi.can-set-denylist = can set AMFI code signing denylist
+com.apple.private.amfi.can-load-cdhash = can load code directory hashes into AMFI
+com.apple.private.amfi.set-permissive = can set AMFI trust cache to permissive mode
+com.apple.private.amfi.developer-mode-control = can control developer mode (enable, disable, query)
+com.apple.private.amfi.garbage-collect-profiles = can trigger garbage collection of XNU provisioning profiles
+com.apple.private.amfi.can-check-trust-cache = can query trust cache entries
+com.apple.private.amfi.can-execute-cdhash = can validate and execute code by cdhash
+
+[debugging info bool]
+com.apple.private.cs.debugger = can map pages with invalid code signatures in debugged processes
+com.apple.security.cs.debugger = can act as debugger for other processes
+task_for_pid-allow = can call task_for_pid on other processes
+com.apple.private.set-exception-port = can set exception ports on tasks/threads
+com.apple.system-task-ports.token.control = can obtain control port tokens for system tasks
+com.apple.private.thread-set-state = can modify thread register state
+com.apple.private.delegate-signals = can delegate signals between processes
+com.apple.private.amfi.can-set-exception-ports = can set exception ports on tasks/threads, bypassing AMFI restrictions
+com.apple.system-task-ports = full task port access (control) on other processes
+com.apple.system-task-ports.control = can obtain control port on other processes
+com.apple.system-task-ports.inspect = can obtain inspect port on other processes
+com.apple.system-task-ports.read = can obtain read port on other processes
+com.apple.system-task-ports.safe = full task port access with safety restrictions
+com.apple.system-task-ports.control.safe = control port access with safety restrictions
+com.apple.system-task-ports.inspect.safe = inspect port access with safety restrictions
+com.apple.system-task-ports.read.safe = read port access with safety restrictions
+internal.com.apple.system-task-ports.control = internal control port access (Apple Internal only)
+com.apple.system-task-ports.token.corpse = can obtain task ID tokens for corpse tasks
+com.apple.system-task-ports.token.inspect = can obtain task ID tokens for inspection
+com.apple.system-task-ports.token.read = can obtain task ID tokens for reading
+com.apple.private.cs.debugger.safe = can act as debugger with safety restrictions
+com.apple.security.cs.debugger.root = root-level debugger — elevated task port access
+com.apple.security.cs.debugger.read.root = read-only root-level debugger — read task port access
+com.apple.private.host-exception-port-override = can override host exception port
+com.apple.security.get-movable-control-port = can obtain movable control port for tasks
+
+[pac weakens bool]
+com.apple.private.skip.pac.exception = allows non-fatal PAC exceptions on non-FPAC hardware
+
+[sandbox weakens bool]
+com.apple.private.security.no-sandbox = disables sandbox (DEBUG/DEVELOPMENT kernels only)
+com.apple.private.security.no-container = runs without a security container
+com.apple.private.security.storage-exempt.heritable = exempt from storage restrictions (heritable)
+
+[sandbox_exception weakens exists]
+com.apple.security.temporary-exception.apple-events = sandbox exception: send Apple events to other apps
+com.apple.security.temporary-exception.audio-unit-host = sandbox exception: host non-sandbox-safe audio components
+com.apple.security.temporary-exception.mach-lookup.global-name = sandbox exception: lookup global Mach services
+com.apple.security.temporary-exception.mach-register.global-name = sandbox exception: register global Mach services
+com.apple.security.temporary-exception.files.home-relative-path.read-only = sandbox exception: read files in home directory
+com.apple.security.temporary-exception.files.home-relative-path.read-write = sandbox exception: read/write files in home directory
+com.apple.security.temporary-exception.files.absolute-path.read-only = sandbox exception: read files at absolute paths
+com.apple.security.temporary-exception.files.absolute-path.read-write = sandbox exception: read/write files at absolute paths
+com.apple.security.temporary-exception.iokit-user-client-class = sandbox exception: access additional IOUserClient subclasses
+com.apple.security.temporary-exception.shared-preference.read-only = sandbox exception: read shared preference domains
+com.apple.security.temporary-exception.shared-preference.read-write = sandbox exception: read/write shared preference domains
+
+[kernel info bool]
+com.apple.private.settime = can set system time via settimeofday/ntp_adjtime
+com.apple.private.ktrace-allow = can perform kernel tracing
+com.apple.private.stackshot = can capture kernel stackshots
+com.apple.private.read-environment-variables = can read other processes' environment variables via sysctl
+com.apple.private.task_policy = can modify task policy settings
+com.apple.private.spawn-subsystem-root = can spawn with subsystem root capabilities
+com.apple.private.iokit.system-nvram-allow = can access system NVRAM
+com.apple.private.kernel.system-override = kernel system override capabilities
+
+[trust_cache info bool]
+com.apple.private.unload-trust-cache = can unload trust caches
+com.apple.private.pmap.load-trust-cache = can load trust caches into pmap
+
+[diagnostics info exists]
+com.apple.private.enable-coredump-on-panic = triggers userspace coredump on kernel panic
+com.apple.private.custom-coredump-location = custom coredump file path
+
+[diagnostics info bool]
+com.apple.private.coredump-encryption-key = coredump encryption capability
+
+[memory info bool]
+com.apple.developer.kernel.extended-virtual-addressing = extended virtual address space
+com.apple.developer.kernel.increased-memory-limit = increased memory footprint limit
+com.apple.private.memorystatus = privileged memorystatus/jetsam operations
+
+[process_control info bool]
+com.apple.private.persona-mgmt = can manage personas
+com.apple.private.xpc.role-account = XPC role account capability
+
+[filesystem info bool]
+com.apple.private.vfs.open-by-id = can open files by inode ID
+com.apple.private.security.disk-device-access = direct disk device access
+com.apple.private.security.storage.AppBundles = access to app bundle storage
+com.apple.private.security.storage.DiagnosticReports.read-write = read-write access to DiagnosticReports storage
+com.apple.private.security.storage.Messages = access to Messages storage
+com.apple.private.security.storage.Photos = access to Photos storage
+com.apple.private.security.storage.trustd-private = access to trustd private storage
+com.apple.private.vfs.snapshot = can create and manage filesystem snapshots
+
+[cs_exception weakens exists]
+com.apple.private.oop-jit.loader = OOP-JIT loader — may load OOP-JIT signed code into runner processes
+
+[diagnostics weakens bool]
+com.apple.security.allow-coredump = allows core dumps when SIP is enabled
+
+[amfi strengthens exists]
+com.apple.private.amfi.version-restriction = enforces minimum version restriction on platform binaries
+
+[code_signing info bool]
+com.apple.private.allow-cs-signing = can perform code signing operations via AMFI policy syscall
+com.apple.private.allow-cs-signing.internal = can perform internal code signing operations
+com.apple.private.playgrounds-local-signing-allowed = Swift Playgrounds local code signing allowed
+com.apple.private.enable-swift-playgrounds-validation = enables Swift Playgrounds code validation
+com.apple.private.talagent.signature_update = TAL agent signature update capability
+
+[code_signing info exists]
+com.apple.private.codesignkit.signer-source-host = can act as CodeSignKit signer source host
+com.apple.private.signing-identifier = custom signing identifier override
+
+[rootless info bool]
+com.apple.private.allow-bless = can bless volumes via com.apple.root.installed xattr
+com.apple.rootless.install = can install into SIP-protected paths
+com.apple.rootless.install.heritable = can install into SIP-protected paths (heritable)
+com.apple.rootless.internal-installer-equivalent = SIP installer-equivalent (Apple Internal)
+com.apple.rootless.restricted-nvram-variables.heritable = can access restricted NVRAM variables (heritable)
+com.apple.rootless.datavault.controller = SIP data vault controller
+com.apple.rootless.datavault.controller.internal = SIP data vault controller (Apple Internal)
+com.apple.rootless.storage.cvms = SIP-exempt access to CVMS storage
+com.apple.private.security.install = can install into protected paths (private variant)
+com.apple.private.security.install.heritable = can install into protected paths (private, heritable)
+com.apple.private.security.restricted-nvram-variables.heritable = can access restricted NVRAM variables (private, heritable)
+com.apple.private.security.datavault.controller = data vault controller (private variant)
+com.apple.private.security.internal-installer-equivalent = installer-equivalent SIP bypass (private variant)
+com.apple.private.security.datavault.controller.internal = internal data vault controller (private variant)
+
+[sandbox info bool]
+com.apple.private.security.container-manager = can manage security containers
+
+[tcc info exists]
+com.apple.private.tcc.allow = grants access to TCC-protected resources without consent
+com.apple.private.tcc.allow.overridable = TCC access that can be overridden by user
+
+[tcc info bool]
+com.apple.private.tcc.manager = can manage TCC database entries
+com.apple.private.tcc.manager.set-responsible = can set responsible process for TCC attribution
+
+[browser info bool]
+com.apple.developer.web-browser-engine.webcontent = web content process for alternative browser engine
+com.apple.developer.web-browser-engine.host = host process for alternative browser engine
+com.apple.developer.web-browser-engine.rendering = rendering process for alternative browser engine
+com.apple.developer.web-browser-engine.networking = networking process for alternative browser engine
+
+[developer info exists]
+com.apple.developer.system-extension = can install and manage system extensions
+com.apple.developer.networking.networkextension = can use NetworkExtension framework
+
+[developer info bool]
+com.apple.developer.endpoint-security = can use Endpoint Security framework
+com.apple.developer.driverkit = can develop DriverKit drivers
+
+[sandbox info exists]
+com.apple.security.application-groups = application group container access
