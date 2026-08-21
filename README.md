@@ -1,5 +1,7 @@
 # macchk
 
+![Badge](https://img.shields.io/badge/AI_Slop-Yes-red)
+
 Static security analysis for Mach-O binaries. Like [checksec](https://github.com/slimm609/checksec.sh), but for macOS/iOS.
 
 Inspects executables, dylibs, and universal binaries for compiler hardening, code signing, entitlements, and instruction-level security features.
